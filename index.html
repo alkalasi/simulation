@@ -125,7 +125,7 @@ song.preload = 'auto';
 song.volume = 1;
 
 const CHAIN_WINDOW_MS = 500;
-const SONG_START_TIME = 1; // Song beginnt bei 0:01 statt 0:00
+const SONG_START_TIME = 0; // Song beginnt wieder bei 0:00
 let chainActive = false;
 let chainTimeout = null;
 
@@ -142,7 +142,11 @@ document.addEventListener('keydown', ensureAudio);
 
 function stopChain() {
   song.pause();
-  song.currentTime = SONG_START_TIME;
+  // load() statt nur currentTime setzen: Safari übernimmt ein reines
+  // "currentTime = 0" nach pause() manchmal nicht zuverlässig, wodurch der
+  // Song beim nächsten Aufprall einfach an der alten Stelle weiterläuft
+  // statt neu zu starten. load() erzwingt einen echten Reset auf 0.
+  song.load();
   chainActive = false;
   chainTimeout = null;
 }
@@ -153,7 +157,8 @@ function playBounceSound() {
     chainTimeout = null;
   }
   if (!chainActive) {
-    // Neue Kette startet ab Sekunde 1
+    // Neue Kette startet ab Sekunde 0 (nach stopChain() ist load() bereits
+    // gelaufen, currentTime ist also schon 0 - hier zur Sicherheit nochmal)
     song.currentTime = SONG_START_TIME;
     song.play().catch(() => {});
     chainActive = true;
@@ -202,7 +207,7 @@ function initBall() {
 function init() {
   if (chainTimeout) clearTimeout(chainTimeout);
   song.pause();
-  song.currentTime = SONG_START_TIME;
+  song.load();
   chainActive = false;
   if (clipped) {
     ctx.restore();
@@ -266,8 +271,10 @@ function draw() {
   // Kein clearRect -> Spur akkumuliert sich dauerhaft
   ctx.beginPath();
   ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
-  ctx.lineWidth = STROKE_WIDTH;
-  ctx.strokeStyle = `hsl(${ball.hue}, 90%, 55%)`;
+  ctx.fillStyle = `hsl(${ball.hue}, 90%, 55%)`;
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#000000';
   ctx.stroke();
 }
 
