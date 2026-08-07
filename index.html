@@ -125,6 +125,7 @@ song.preload = 'auto';
 song.volume = 1;
 
 const CHAIN_WINDOW_MS = 500;
+const SONG_START_TIME = 1; // Song beginnt bei 0:01 statt 0:00
 let chainActive = false;
 let chainTimeout = null;
 
@@ -141,7 +142,7 @@ document.addEventListener('keydown', ensureAudio);
 
 function stopChain() {
   song.pause();
-  song.currentTime = 0;
+  song.currentTime = SONG_START_TIME;
   chainActive = false;
   chainTimeout = null;
 }
@@ -152,8 +153,8 @@ function playBounceSound() {
     chainTimeout = null;
   }
   if (!chainActive) {
-    // Neue Kette startet ab Sekunde 0
-    song.currentTime = 0;
+    // Neue Kette startet ab Sekunde 1
+    song.currentTime = SONG_START_TIME;
     song.play().catch(() => {});
     chainActive = true;
   }
@@ -201,7 +202,7 @@ function initBall() {
 function init() {
   if (chainTimeout) clearTimeout(chainTimeout);
   song.pause();
-  song.currentTime = 0;
+  song.currentTime = SONG_START_TIME;
   chainActive = false;
   if (clipped) {
     ctx.restore();
