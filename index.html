@@ -99,7 +99,7 @@ resize();
 const BAR_HEALTHS = [1000, 10000000000, 1000000000000000];
 const TOP_COUNT = 100;
 const TOP_COLOR = '#e85fd0';
-const BOT_COLOR = '#f0df55';
+const BOT_COLOR = '#e0342b';
 const GRAVITY = 0.22;
 const MAX_FALL_SPEED = 7;
 const BOUNCE_VY = 10; // fixe Absprunggeschwindigkeit -> immer gleiche Sprunghöhe
@@ -399,7 +399,7 @@ function draw() {
   ctx.fillText('VS', W / 2, (VS_Y0 + VS_Y1) / 2);
 
   // Bottom-Label
-  ctx.fillStyle = '#b8a820';
+  ctx.fillStyle = BOT_COLOR;
   ctx.font = '900 18px Arial';
   ctx.fillText('FACTORIAL BALL', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
 
@@ -426,7 +426,7 @@ function draw() {
   for (const p of popups) {
     if (p.color !== BOT_COLOR) continue;
     ctx.globalAlpha = Math.max(0, 1 - p.age / 40);
-    ctx.fillStyle = '#8a7a10';
+    ctx.fillStyle = BOT_COLOR;
     ctx.font = 'bold 15px Arial';
     ctx.textAlign = 'center';
     ctx.fillText(p.text, p.x, p.y - p.age * 0.6);
@@ -435,7 +435,7 @@ function draw() {
   ctx.restore();
   ctx.textAlign = 'left';
   ctx.font = 'bold 12px Arial';
-  ctx.fillStyle = '#8a7a10';
+  ctx.fillStyle = BOT_COLOR;
   ctx.fillText('DAMAGE: ' + factorial(botHitCount + 1).toLocaleString('de-DE'), 12, BOT_ARENA_Y0 + 14);
 
   drawSideBars(botBars, BOT_ARENA_Y1, BOT_COLOR);
