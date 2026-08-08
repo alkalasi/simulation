@@ -37,21 +37,6 @@
     text-shadow: 0 2px 6px rgba(0,0,0,0.7);
     user-select: none;
   }
-  #restart {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background: #17b3d4;
-    color: #fff;
-    border: none;
-    padding: 7px 14px;
-    border-radius: 16px;
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    z-index: 5;
-  }
-  #restart:hover { background: #12a0be; }
 </style>
 </head>
 <body>
@@ -59,7 +44,6 @@
   <div id="canvas-wrap">
     <canvas id="c"></canvas>
     <div id="start-overlay">Tap to start<br><span style="font-size:0.6em; opacity:0.85;">(oder K drücken)</span></div>
-    <button id="restart">Neu starten</button>
   </div>
 </div>
 
@@ -113,7 +97,7 @@ resize();
 // Balken-Stufen: Index 0 = direkt unter der Arena (kleinstes Leben),
 // Index 2 = ganz unten / au\u00dfen (gr\u00f6\u00dftes Leben)
 const BAR_HEALTHS = [1000000, 10000000, 100000000];
-const TOP_COUNT = 30;
+const TOP_COUNT = 100;
 const TOP_COLOR = '#e85fd0';
 const BOT_COLOR = '#f0df55';
 const GRAVITY = 0.22;
@@ -197,8 +181,8 @@ function init() {
     topBalls.push({
       x: 20 + Math.random() * (W - 40),
       y: TOP_ARENA_Y0 + 15 + Math.random() * (ARENA_H - 30),
-      vx: Math.cos(angle) * 9,
-      vy: Math.sin(angle) * 9,
+      vx: Math.cos(angle) * 18,
+      vy: Math.sin(angle) * 18,
       r: 6,
     });
   }
@@ -230,7 +214,6 @@ function startGame() {
 }
 document.getElementById('start-overlay').addEventListener('click', startGame);
 document.addEventListener('keydown', (e) => { if (e.key === 'k' || e.key === 'K') startGame(); });
-document.getElementById('restart').addEventListener('click', init);
 
 function addPopup(x, y, text, color) {
   popups.push({ x, y, text, color, age: 0 });
@@ -354,7 +337,7 @@ function draw() {
   ctx.font = '900 18px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('30x SPEED BALLS (+1 DMG/TREFFER)', W / 2, LABEL_H / 2);
+  ctx.fillText('100x SPEED BALLS', W / 2, LABEL_H / 2);
 
   // Top-Arena (reicht dynamisch bis zum aktuellen Boden-Balken)
   const topActiveIdx = getActiveBarIndex(topBars);
@@ -386,8 +369,8 @@ function draw() {
   ctx.restore();
   ctx.textAlign = 'left';
   ctx.font = 'bold 12px Arial';
-  ctx.fillStyle = '#000';
-  ctx.fillText('N\u00e4chster Treffer: ' + (topHitCount + 1), 12, TOP_ARENA_Y0 + 14);
+  ctx.fillStyle = TOP_COLOR;
+  ctx.fillText('DAMAGE: ' + (topHitCount + 1), 12, TOP_ARENA_Y0 + 14);
 
   drawSideBars(topBars, TOP_ARENA_Y1, TOP_COLOR);
   drawChecker(TOP_CHECKER_Y0, TOP_CHECKER_Y1);
@@ -402,7 +385,7 @@ function draw() {
   // Bottom-Label
   ctx.fillStyle = '#b8a820';
   ctx.font = '900 18px Arial';
-  ctx.fillText('FIBONACCI BALL (LANGSAM)', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
+  ctx.fillText('FIBONACCI BALL', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
 
   // Bottom-Arena (reicht dynamisch bis zum aktuellen Boden-Balken)
   const botActiveIdx = getActiveBarIndex(botBars);
@@ -433,8 +416,8 @@ function draw() {
   ctx.restore();
   ctx.textAlign = 'left';
   ctx.font = 'bold 12px Arial';
-  ctx.fillStyle = '#000';
-  ctx.fillText('N\u00e4chster Treffer (unten): ' + fibonacci(botHitCount + 1).toLocaleString('de-DE'), 12, BOT_ARENA_Y0 + 14);
+  ctx.fillStyle = '#8a7a10';
+  ctx.fillText('DAMAGE: ' + fibonacci(botHitCount + 1).toLocaleString('de-DE'), 12, BOT_ARENA_Y0 + 14);
 
   drawSideBars(botBars, BOT_ARENA_Y1, BOT_COLOR);
   drawChecker(BOT_CHECKER_Y0, BOT_CHECKER_Y1);
@@ -443,7 +426,7 @@ function draw() {
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     ctx.fillRect(0, 0, W, H);
     const col = winner === 'top' ? TOP_COLOR : BOT_COLOR;
-    const label = winner === 'top' ? '30x SPEED BALLS' : 'FIBONACCI BALL';
+    const label = winner === 'top' ? '100x SPEED BALLS' : 'FIBONACCI BALL';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.shadowColor = col;
