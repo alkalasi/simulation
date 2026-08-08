@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>30x Speed vs Factorial</title>
+<title>100x Fibonacci vs Factorial</title>
 <style>
   html, body {
     margin: 0;
@@ -96,15 +96,15 @@ resize();
 
 // Balken-Stufen: Index 0 = direkt unter der Arena (kleinstes Leben),
 // Index 2 = ganz unten / au\u00dfen (gr\u00f6\u00dftes Leben)
-const BAR_HEALTHS = [1000000, 10000000, 100000000];
+const BAR_HEALTHS = [1000, 10000000000, 1000000000000000];
 const TOP_COUNT = 100;
 const TOP_COLOR = '#e85fd0';
 const BOT_COLOR = '#f0df55';
 const GRAVITY = 0.22;
 const MAX_FALL_SPEED = 7;
 const BOUNCE_VY = 10; // fixe Absprunggeschwindigkeit -> immer gleiche Sprunghöhe
-const BOT_BOUNCE_VY = 10; // Fibonacci-Ball springt genauso hoch wie die Speed-Balls
-const SLOWMO = 0.15; // Zeitfaktor für den Fibonacci-Ball (1 = normal, kleiner = langsamer)
+const BOT_BOUNCE_VY = 15; // Sprunghöhe des Factorial-Balls
+const SLOWMO = 0.06; // Zeitfaktor für den Factorial-Ball (1 = normal, kleiner = langsamer)
 
 let audioCtx = null;
 function ensureAudio() {
@@ -142,7 +142,12 @@ function winSound() {
   });
 }
 
-let topBalls, botBall, topBars, botBars, topHitCount, botHitCount, popups, gameOver, winner, started;
+let topBalls, botBall, topBars, botBars, gameStartTs, botHitCount, popups, gameOver, winner, started;
+
+function currentFibIndex(now) {
+  if (!gameStartTs) return 1;
+  return 1 + Math.floor((now - gameStartTs) / 800);
+}
 
 function fibonacci(n) {
   let a = 1, b = 1;
@@ -153,6 +158,11 @@ function fibonacci(n) {
     b = c;
   }
   return b;
+}
+function factorial(n) {
+  let r = 1;
+  for (let i = 2; i <= n; i++) r *= i;
+  return r;
 }
 
 // Schaden geht immer auf den ersten noch lebenden Balken (Index 0 zuerst)
@@ -196,8 +206,8 @@ function init() {
   };
   topBars = BAR_HEALTHS.slice();
   botBars = BAR_HEALTHS.slice();
+  gameStartTs = null;
   botHitCount = 0;
-  topHitCount = 0;
   popups = [];
   gameOver = false;
   winner = null;
@@ -210,6 +220,7 @@ function startGame() {
   if (started) return;
   ensureAudio();
   started = true;
+  gameStartTs = performance.now();
   document.getElementById('start-overlay').style.display = 'none';
 }
 document.getElementById('start-overlay').addEventListener('click', startGame);
@@ -221,11 +232,15 @@ function addPopup(x, y, text, color) {
 
 function update() {
   if (!started || gameOver) return;
+  const now = performance.now();
+  const fibIdx = currentFibIndex(now);
+  const dmg = fibonacci(fibIdx);
 
-  // Top: 30 schnelle B\u00e4lle - Gravitation, Schaden NUR beim Kontakt mit der
+  // Top: 100 Fibonacci-B\u00e4lle - Gravitation, Schaden NUR beim Kontakt mit der
   // unteren Wand. Die Wand liegt am oberen schwarzen Rand des ersten noch
   // lebenden Balkens - verschwindet ein Balken, r\u00fcckt die Wand eine
-  // Balkenh\u00f6he weiter nach unten.
+  // Balkenh\u00f6he weiter nach unten. Der Schaden-Wert steigt einmal pro
+  // Sekunde (nicht pro Treffer).
   const topFloor = TOP_ARENA_Y1 + getActiveBarIndex(topBars) * BAR_H;
   const tx0 = 10, tx1 = W - 10, ty0 = TOP_ARENA_Y0 + 8, ty1 = topFloor - 8;
   for (const b of topBalls) {
@@ -240,18 +255,20 @@ function update() {
       b.y = ty1 - b.r;
       b.vy = -BOUNCE_VY; // immer gleich hoher Sprung, egal aus welcher Fallh\u00f6he
       if (!isFullyDepleted(topBars)) {
-        topHitCount++;
-        const dmg = topHitCount;
         applyDamage(topBars, dmg);
         addPopup(b.x, b.y, '-' + dmg, TOP_COLOR);
         topHitSound();
+      } else if (!gameOver) {
+        // Letzter Balken ist weg - Ball ist bis zur Karo-Linie durchgefallen
+        gameOver = true;
+        winner = 'bot';
       }
     }
   }
 
   // Unten: 1 Fibonacci-Ball in Zeitlupe - Gravitation & Bewegung mit
   // Zeitfaktor gestreckt, damit die Flugbahn/Sprunghöhe gleich bleibt,
-  // nur eben viel langsamer abl\u00e4uft
+  // nur eben viel langsamer abl\u00e4uft. Gleicher zeitbasierter Schaden-Wert.
   const botFloor = BOT_ARENA_Y1 + getActiveBarIndex(botBars) * BAR_H;
   const bx0 = 14, bx1 = W - 14, by0 = BOT_ARENA_Y0 + 12, by1 = botFloor - 12;
   botBall.vy += GRAVITY * SLOWMO;
@@ -266,10 +283,14 @@ function update() {
     botBall.vy = -BOT_BOUNCE_VY * SLOWMO; // immer gleich hoher Sprung, egal aus welcher Fallh\u00f6he
     if (!isFullyDepleted(botBars)) {
       botHitCount++;
-      const dmg = fibonacci(botHitCount);
-      applyDamage(botBars, dmg);
-      addPopup(botBall.x, botBall.y, '-' + dmg.toLocaleString('de-DE'), BOT_COLOR);
+      const botDmg = factorial(botHitCount);
+      applyDamage(botBars, botDmg);
+      addPopup(botBall.x, botBall.y, '-' + botDmg.toLocaleString('de-DE'), BOT_COLOR);
       botHitSound(botHitCount);
+    } else if (!gameOver) {
+      // Letzter Balken ist weg - Ball ist bis zur Karo-Linie durchgefallen
+      gameOver = true;
+      winner = 'top';
     }
   }
 
@@ -277,9 +298,6 @@ function update() {
     popups[i].age++;
     if (popups[i].age > 40) popups.splice(i, 1);
   }
-
-  if (isFullyDepleted(topBars)) { gameOver = true; winner = 'bot'; }
-  else if (isFullyDepleted(botBars)) { gameOver = true; winner = 'top'; }
 }
 
 function drawChecker(y0, y1) {
@@ -337,7 +355,7 @@ function draw() {
   ctx.font = '900 18px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('100x SPEED BALLS', W / 2, LABEL_H / 2);
+  ctx.fillText('100x FIBONACCI BALLS', W / 2, LABEL_H / 2);
 
   // Top-Arena (reicht dynamisch bis zum aktuellen Boden-Balken)
   const topActiveIdx = getActiveBarIndex(topBars);
@@ -347,16 +365,14 @@ function draw() {
   ctx.beginPath();
   ctx.rect(0, TOP_ARENA_Y0, W, topFloorY - TOP_ARENA_Y0);
   ctx.clip();
-  if (!isFullyDepleted(topBars)) {
-    for (const b of topBalls) {
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-      ctx.fillStyle = TOP_COLOR;
-      ctx.fill();
-      ctx.lineWidth = 1.2;
-      ctx.strokeStyle = '#000';
-      ctx.stroke();
-    }
+  for (const b of topBalls) {
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+    ctx.fillStyle = TOP_COLOR;
+    ctx.fill();
+    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = '#000';
+    ctx.stroke();
   }
   for (const p of popups) {
     if (p.color !== TOP_COLOR) continue;
@@ -370,7 +386,7 @@ function draw() {
   ctx.textAlign = 'left';
   ctx.font = 'bold 12px Arial';
   ctx.fillStyle = TOP_COLOR;
-  ctx.fillText('DAMAGE: ' + (topHitCount + 1), 12, TOP_ARENA_Y0 + 14);
+  ctx.fillText('DAMAGE: ' + fibonacci(currentFibIndex(performance.now())).toLocaleString('de-DE'), 12, TOP_ARENA_Y0 + 14);
 
   drawSideBars(topBars, TOP_ARENA_Y1, TOP_COLOR);
   drawChecker(TOP_CHECKER_Y0, TOP_CHECKER_Y1);
@@ -385,7 +401,7 @@ function draw() {
   // Bottom-Label
   ctx.fillStyle = '#b8a820';
   ctx.font = '900 18px Arial';
-  ctx.fillText('FIBONACCI BALL', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
+  ctx.fillText('FACTORIAL BALL', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
 
   // Bottom-Arena (reicht dynamisch bis zum aktuellen Boden-Balken)
   const botActiveIdx = getActiveBarIndex(botBars);
@@ -395,15 +411,13 @@ function draw() {
   ctx.beginPath();
   ctx.rect(0, BOT_ARENA_Y0, W, botFloorY - BOT_ARENA_Y0);
   ctx.clip();
-  if (!isFullyDepleted(botBars)) {
-    ctx.beginPath();
-    ctx.arc(botBall.x, botBall.y, botBall.r, 0, Math.PI * 2);
-    ctx.fillStyle = BOT_COLOR;
-    ctx.fill();
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = '#000';
-    ctx.stroke();
-  }
+  ctx.beginPath();
+  ctx.arc(botBall.x, botBall.y, botBall.r, 0, Math.PI * 2);
+  ctx.fillStyle = BOT_COLOR;
+  ctx.fill();
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = '#000';
+  ctx.stroke();
   for (const p of popups) {
     if (p.color !== BOT_COLOR) continue;
     ctx.globalAlpha = Math.max(0, 1 - p.age / 40);
@@ -417,7 +431,7 @@ function draw() {
   ctx.textAlign = 'left';
   ctx.font = 'bold 12px Arial';
   ctx.fillStyle = '#8a7a10';
-  ctx.fillText('DAMAGE: ' + fibonacci(botHitCount + 1).toLocaleString('de-DE'), 12, BOT_ARENA_Y0 + 14);
+  ctx.fillText('DAMAGE: ' + factorial(botHitCount + 1).toLocaleString('de-DE'), 12, BOT_ARENA_Y0 + 14);
 
   drawSideBars(botBars, BOT_ARENA_Y1, BOT_COLOR);
   drawChecker(BOT_CHECKER_Y0, BOT_CHECKER_Y1);
