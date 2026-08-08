@@ -278,8 +278,8 @@ function update() {
     if (popups[i].age > 40) popups.splice(i, 1);
   }
 
-  if (isFullyDepleted(topBars)) { gameOver = true; winner = 'bot'; winSound(); }
-  else if (isFullyDepleted(botBars)) { gameOver = true; winner = 'top'; winSound(); }
+  if (isFullyDepleted(topBars)) { gameOver = true; winner = 'bot'; }
+  else if (isFullyDepleted(botBars)) { gameOver = true; winner = 'top'; }
 }
 
 function drawChecker(y0, y1) {
@@ -421,21 +421,6 @@ function draw() {
 
   drawSideBars(botBars, BOT_ARENA_Y1, BOT_COLOR);
   drawChecker(BOT_CHECKER_Y0, BOT_CHECKER_Y1);
-
-  if (gameOver) {
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(0, 0, W, H);
-    const col = winner === 'top' ? TOP_COLOR : BOT_COLOR;
-    const label = winner === 'top' ? '100x SPEED BALLS' : 'FIBONACCI BALL';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.shadowColor = col;
-    ctx.shadowBlur = 30;
-    ctx.font = '900 26px Arial';
-    ctx.fillStyle = col;
-    ctx.fillText(label + ' GEWINNT!', W / 2, H / 2);
-    ctx.shadowBlur = 0;
-  }
 }
 
 function loop() {
