@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Quadratzahlen vs Fibonacci</title>
+<title>3x Ball vs 3 Fibonacci Bälle</title>
 <style>
   html, body {
     margin: 0;
@@ -94,18 +94,16 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
-// Balken-Stufen: Index 0 = direkt unter der Arena (kleinstes Leben),
-// Index 2 = ganz unten / außen (größtes Leben)
 const BAR_HEALTHS = [1000, 10000000000, 1000000000000000];
-const TOP_COLOR = '#2ecc71'; // Quadratzahlen-Ball
-const BOT_COLOR = '#9b59b6'; // Fibonacci-Ball
+const TOP_COLOR = '#e67e22'; // 3x Ball
+const BOT_COLOR = '#9b59b6'; // Fibonacci-Bälle
 const GRAVITY = 0.22;
 const MAX_FALL_SPEED = 7;
-const BOUNCE_VY = 8; // Sprunghöhe der Fibonacci-Bälle (bleibt in der Arena, statt oben anzuschlagen)
-const TOP_BOUNCE_VY = 9.6; // so berechnet, dass der Double-Ball trotz Zeitlupe genauso hoch springt wie der Fibonacci-Ball
-const TOP_BALL_SPEED = 7; // Doppel-Ball bewegt sich mehr durch den Raum
-const BOT_BALL_SPEED = 4; // Fibonacci-Bälle
-const SLOWMO = 0.7; // Zeitfaktor für den Double-Ball (1 = normal, kleiner = langsamer)
+const BOUNCE_VY = 8; // Sprunghöhe der Fibonacci-Bälle
+const BALL_SPEED = 5; // gleiche Geschwindigkeit für beide
+const SLOWMO = 0.7; // Zeitfaktor für den 3x Ball (1 = normal, kleiner = langsamer)
+const TOP_BOUNCE_VY = BOUNCE_VY / Math.sqrt(SLOWMO); // so berechnet, dass die Sprunghöhe trotz Zeitlupe gleich bleibt
+const BOT_BALL_COUNT = 2;
 
 let audioCtx = null;
 function ensureAudio() {
@@ -142,7 +140,7 @@ function fibonacci(n) {
   }
   return b;
 }
-function doubling(n) { return Math.pow(2, n - 1); }
+function tripling(n) { return Math.pow(3, n); }
 
 function applyDamage(bars, dmg) {
   for (let i = 0; i < bars.length; i++) {
@@ -166,19 +164,20 @@ function init() {
   topBall = {
     x: W / 2,
     y: TOP_ARENA_Y0 + ARENA_H / 2,
-    vx: Math.cos(tAngle) * TOP_BALL_SPEED,
-    vy: Math.sin(tAngle) * TOP_BALL_SPEED,
+    vx: Math.cos(tAngle) * BALL_SPEED,
+    vy: Math.sin(tAngle) * BALL_SPEED,
     r: 13,
   };
   botBalls = [];
-  for (let i = 0; i < 1; i++) {
+  for (let i = 0; i < BOT_BALL_COUNT; i++) {
     const bAngle = Math.random() * Math.PI * 2;
     botBalls.push({
-      x: W / 2,
+      x: W / 2 + (i === 0 ? -30 : 30),
       y: BOT_ARENA_Y0 + ARENA_H / 2,
-      vx: Math.cos(bAngle) * BOT_BALL_SPEED,
-      vy: Math.sin(bAngle) * BOT_BALL_SPEED,
-      r: 13,
+      vx: Math.cos(bAngle) * BALL_SPEED,
+      vy: Math.sin(bAngle) * BALL_SPEED,
+      r: 11,
+      finished: false,
     });
   }
   topBars = BAR_HEALTHS.slice();
@@ -208,8 +207,8 @@ function addPopup(x, y, text, color) {
 function update() {
   if (!started || gameOver) return;
 
-  // Oben: Quadratzahlen-Ball - Schaden NUR beim Kontakt mit der unteren
-  // Wand (bei den Balken), steigt bei jedem Treffer als n^2
+  // Oben: 3x Ball - Schaden NUR beim Kontakt mit der unteren Wand,
+  // verdreifacht sich bei jedem Treffer (3, 9, 27, 81, ...)
   const topFloor = TOP_ARENA_Y1 + getActiveBarIndex(topBars) * BAR_H;
   const tx0 = 12, tx1 = W - 12, ty0 = TOP_ARENA_Y0 + 10, ty1 = topFloor - 10;
   topBall.vy += GRAVITY * SLOWMO;
@@ -224,7 +223,7 @@ function update() {
     topBall.vy = -TOP_BOUNCE_VY * SLOWMO;
     if (!isFullyDepleted(topBars)) {
       topHitCount++;
-      const dmg = doubling(topHitCount);
+      const dmg = tripling(topHitCount);
       applyDamage(topBars, dmg);
       addPopup(topBall.x, topBall.y, '-' + dmg.toLocaleString('de-DE'), TOP_COLOR);
       topHitSound(topHitCount);
@@ -233,10 +232,12 @@ function update() {
     }
   }
 
-  // Unten: 2 Fibonacci-B\u00e4lle, teilen sich denselben Trefferz\u00e4hler
+  // Unten: 2 Fibonacci-Bälle, teilen sich denselben Trefferzähler.
+  // Beide müssen einzeln die Karo-Linie erreichen, bevor das Spiel endet.
   const botFloor = BOT_ARENA_Y1 + getActiveBarIndex(botBars) * BAR_H;
   const bx0 = 12, bx1 = W - 12, by0 = BOT_ARENA_Y0 + 10, by1 = botFloor - 10;
   for (const bb of botBalls) {
+    if (bb.finished) continue;
     bb.vy += GRAVITY;
     if (bb.vy > MAX_FALL_SPEED) bb.vy = MAX_FALL_SPEED;
     bb.x += bb.vx;
@@ -246,15 +247,20 @@ function update() {
     if (bb.y - bb.r < by0) { bb.y = by0 + bb.r; bb.vy *= -1; }
     if (bb.y + bb.r > by1) {
       bb.y = by1 - bb.r;
-      bb.vy = -BOUNCE_VY;
       if (!isFullyDepleted(botBars)) {
+        bb.vy = -BOUNCE_VY;
         botHitCount++;
         const dmg = fibonacci(botHitCount);
         applyDamage(botBars, dmg);
         addPopup(bb.x, bb.y, '-' + dmg.toLocaleString('de-DE'), BOT_COLOR);
         botHitSound(botHitCount);
-      } else if (!gameOver) {
-        gameOver = true;
+      } else {
+        // Balken sind leer - dieser Ball bleibt an der Karo-Linie liegen
+        bb.vy = 0;
+        bb.finished = true;
+        if (!gameOver && botBalls.every(b => b.finished)) {
+          gameOver = true;
+        }
       }
     }
   }
@@ -320,7 +326,7 @@ function draw() {
   ctx.font = '900 20px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('DOUBLE BALL', W / 2, LABEL_H / 2);
+  ctx.fillText('3x BALL', W / 2, LABEL_H / 2);
 
   // Top-Arena
   const topActiveIdx = getActiveBarIndex(topBars);
@@ -349,7 +355,7 @@ function draw() {
   ctx.textAlign = 'left';
   ctx.font = 'bold 12px Arial';
   ctx.fillStyle = TOP_COLOR;
-  ctx.fillText('DAMAGE: ' + doubling(topHitCount + 1).toLocaleString('de-DE'), 12, TOP_ARENA_Y0 + 14);
+  ctx.fillText('DAMAGE: ' + tripling(topHitCount + 1).toLocaleString('de-DE'), 12, TOP_ARENA_Y0 + 14);
 
   drawSideBars(topBars, TOP_ARENA_Y1, TOP_COLOR);
   drawChecker(TOP_CHECKER_Y0, TOP_CHECKER_Y1);
@@ -364,7 +370,7 @@ function draw() {
   // Bottom-Label
   ctx.fillStyle = BOT_COLOR;
   ctx.font = '900 20px Arial';
-  ctx.fillText('FIBONACCI BALL', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
+  ctx.fillText('2x FIBONACCI BALLS', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
 
   // Bottom-Arena
   const botActiveIdx = getActiveBarIndex(botBars);
