@@ -102,10 +102,10 @@ const BOT_COLOR = '#9b59b6'; // Fibonacci-Ball
 const GRAVITY = 0.22;
 const MAX_FALL_SPEED = 7;
 const BOUNCE_VY = 8; // Sprunghöhe der Fibonacci-Bälle (bleibt in der Arena, statt oben anzuschlagen)
-const TOP_BOUNCE_VY = 7; // Sprunghöhe des Doppel-Balls (bleibt in der Arena, statt oben anzuschlagen)
+const TOP_BOUNCE_VY = 9.6; // so berechnet, dass der Double-Ball trotz Zeitlupe genauso hoch springt wie der Fibonacci-Ball
 const TOP_BALL_SPEED = 7; // Doppel-Ball bewegt sich mehr durch den Raum
 const BOT_BALL_SPEED = 4; // Fibonacci-Bälle
-const SLOWMO = 0.7; // Zeitfaktor für die Fibonacci-Bälle (1 = normal, kleiner = langsamer)
+const SLOWMO = 0.7; // Zeitfaktor für den Double-Ball (1 = normal, kleiner = langsamer)
 
 let audioCtx = null;
 function ensureAudio() {
@@ -171,10 +171,10 @@ function init() {
     r: 13,
   };
   botBalls = [];
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < 1; i++) {
     const bAngle = Math.random() * Math.PI * 2;
     botBalls.push({
-      x: W / 2 + (i === 0 ? -30 : 30),
+      x: W / 2,
       y: BOT_ARENA_Y0 + ARENA_H / 2,
       vx: Math.cos(bAngle) * BOT_BALL_SPEED,
       vy: Math.sin(bAngle) * BOT_BALL_SPEED,
@@ -212,16 +212,16 @@ function update() {
   // Wand (bei den Balken), steigt bei jedem Treffer als n^2
   const topFloor = TOP_ARENA_Y1 + getActiveBarIndex(topBars) * BAR_H;
   const tx0 = 12, tx1 = W - 12, ty0 = TOP_ARENA_Y0 + 10, ty1 = topFloor - 10;
-  topBall.vy += GRAVITY;
-  if (topBall.vy > MAX_FALL_SPEED) topBall.vy = MAX_FALL_SPEED;
-  topBall.x += topBall.vx;
+  topBall.vy += GRAVITY * SLOWMO;
+  if (topBall.vy > MAX_FALL_SPEED * SLOWMO) topBall.vy = MAX_FALL_SPEED * SLOWMO;
+  topBall.x += topBall.vx * SLOWMO;
   topBall.y += topBall.vy;
   if (topBall.x - topBall.r < tx0) { topBall.x = tx0 + topBall.r; topBall.vx *= -1; }
   if (topBall.x + topBall.r > tx1) { topBall.x = tx1 - topBall.r; topBall.vx *= -1; }
   if (topBall.y - topBall.r < ty0) { topBall.y = ty0 + topBall.r; topBall.vy *= -1; }
   if (topBall.y + topBall.r > ty1) {
     topBall.y = ty1 - topBall.r;
-    topBall.vy = -TOP_BOUNCE_VY;
+    topBall.vy = -TOP_BOUNCE_VY * SLOWMO;
     if (!isFullyDepleted(topBars)) {
       topHitCount++;
       const dmg = doubling(topHitCount);
@@ -237,16 +237,16 @@ function update() {
   const botFloor = BOT_ARENA_Y1 + getActiveBarIndex(botBars) * BAR_H;
   const bx0 = 12, bx1 = W - 12, by0 = BOT_ARENA_Y0 + 10, by1 = botFloor - 10;
   for (const bb of botBalls) {
-    bb.vy += GRAVITY * SLOWMO;
-    if (bb.vy > MAX_FALL_SPEED * SLOWMO) bb.vy = MAX_FALL_SPEED * SLOWMO;
-    bb.x += bb.vx * SLOWMO;
+    bb.vy += GRAVITY;
+    if (bb.vy > MAX_FALL_SPEED) bb.vy = MAX_FALL_SPEED;
+    bb.x += bb.vx;
     bb.y += bb.vy;
     if (bb.x - bb.r < bx0) { bb.x = bx0 + bb.r; bb.vx *= -1; }
     if (bb.x + bb.r > bx1) { bb.x = bx1 - bb.r; bb.vx *= -1; }
     if (bb.y - bb.r < by0) { bb.y = by0 + bb.r; bb.vy *= -1; }
     if (bb.y + bb.r > by1) {
       bb.y = by1 - bb.r;
-      bb.vy = -BOUNCE_VY * SLOWMO;
+      bb.vy = -BOUNCE_VY;
       if (!isFullyDepleted(botBars)) {
         botHitCount++;
         const dmg = fibonacci(botHitCount);
@@ -320,7 +320,7 @@ function draw() {
   ctx.font = '900 20px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('DOPPEL BALL', W / 2, LABEL_H / 2);
+  ctx.fillText('DOUBLE BALL', W / 2, LABEL_H / 2);
 
   // Top-Arena
   const topActiveIdx = getActiveBarIndex(topBars);
