@@ -349,17 +349,12 @@ function draw() {
   drawSideBars(topBars, TOP_ARENA_Y1, TOP_COLOR);
   drawChecker(TOP_CHECKER_Y0, TOP_CHECKER_Y1);
 
-  // VS + Stoppuhr
+  // VS
   ctx.fillStyle = '#111';
   ctx.font = '900 22px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('VS', W / 2, (VS_Y0 + VS_Y1) / 2 - 8);
-  if (started) {
-    const elapsed = (performance.now() - startTs) / 1000;
-    ctx.font = 'bold 13px Arial';
-    ctx.fillText((gameOver ? elapsed.toFixed(1) : Math.floor(elapsed)) + 's', W / 2, (VS_Y0 + VS_Y1) / 2 + 14);
-  }
+  ctx.fillText('VS', W / 2, (VS_Y0 + VS_Y1) / 2);
 
   // Bottom-Label
   ctx.fillStyle = BOT_COLOR;
