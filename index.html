@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>3x Ball vs 3 Fibonacci Bälle</title>
+<title>Tribonacci vs Double Ball - 70 Sekunden</title>
 <style>
   html, body {
     margin: 0;
@@ -94,16 +94,18 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
+// Balken: Index 0 = direkt unter der Arena, Index 2 = ganz unten
 const BAR_HEALTHS = [1000, 10000000000, 1000000000000000];
-const TOP_COLOR = '#e67e22'; // 3x Ball
-const BOT_COLOR = '#9b59b6'; // Fibonacci-Bälle
+const TOP_COLOR = '#d35400'; // Tribonacci-Ball (braucht 58 Treffer)
+const BOT_COLOR = '#2980b9'; // Double-Ball (braucht 49 Treffer)
 const GRAVITY = 0.22;
-const MAX_FALL_SPEED = 7;
-const BOUNCE_VY = 8; // Sprunghöhe der Fibonacci-Bälle
-const BALL_SPEED = 5; // gleiche Geschwindigkeit für beide
-const SLOWMO = 0.7; // Zeitfaktor für den 3x Ball (1 = normal, kleiner = langsamer)
-const TOP_BOUNCE_VY = BOUNCE_VY / Math.sqrt(SLOWMO); // so berechnet, dass die Sprunghöhe trotz Zeitlupe gleich bleibt
-const BOT_BALL_COUNT = 2;
+const MAX_FALL_SPEED = 14;
+// Beide Seiten brauchen jetzt exakt 58 Treffer (Double-Ball-Basis auf 1.8
+// statt 2 angepasst) und denselben Sprungrhythmus (~1.22s) -> ~70s, gleich oft
+const TOP_BOUNCE_VY = 7.92;
+const BOT_BOUNCE_VY = 9.15; // so berechnet, dass die Sprunghöhe trotz Zeitlupe exakt der des Tribonacci-Balls entspricht
+const BOT_SLOWMO = 0.75; // Zeitfaktor für den Double-Ball
+const BALL_SPEED = 3.5;
 
 let audioCtx = null;
 function ensureAudio() {
@@ -118,29 +120,26 @@ function beep(freq, dur, type, vol) {
   const gain = audioCtx.createGain();
   osc.type = type || 'sine';
   osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-  gain.gain.setValueAtTime(vol || 0.12, audioCtx.currentTime);
+  gain.gain.setValueAtTime(vol || 0.13, audioCtx.currentTime);
   gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
   osc.connect(gain);
   gain.connect(audioCtx.destination);
   osc.start();
   osc.stop(audioCtx.currentTime + dur);
 }
-function topHitSound(n) { beep(300 + n * 8, 0.14, 'square', 0.13); }
-function botHitSound(n) { beep(220 + n * 15, 0.22, 'triangle', 0.16); }
+function topHitSound(n) { beep(260 + n * 8, 0.17, 'triangle', 0.14); }
+function botHitSound(n) { beep(300 + n * 10, 0.16, 'square', 0.14); }
 
-let topBall, botBalls, topBars, botBars, topHitCount, botHitCount, popups, gameOver, started;
+let topBall, botBall, topBars, botBars, topHitCount, botHitCount, popups, gameOver, started, startTs;
 
-function fibonacci(n) {
-  let a = 1, b = 1;
-  if (n <= 2) return 1;
-  for (let i = 3; i <= n; i++) {
-    const c = a + b;
-    a = b;
-    b = c;
+function tribonacci(n) {
+  const seq = [0, 1, 1];
+  while (seq.length <= n) {
+    seq.push(seq[seq.length - 1] + seq[seq.length - 2] + seq[seq.length - 3]);
   }
-  return b;
+  return seq[n] > 0 ? seq[n] : 1;
 }
-function tripling(n) { return Math.pow(3, n); }
+function doubling(n) { return Math.pow(2, n - 1); }
 
 function applyDamage(bars, dmg) {
   for (let i = 0; i < bars.length; i++) {
@@ -166,20 +165,16 @@ function init() {
     y: TOP_ARENA_Y0 + ARENA_H / 2,
     vx: Math.cos(tAngle) * BALL_SPEED,
     vy: Math.sin(tAngle) * BALL_SPEED,
-    r: 13,
+    r: 14,
   };
-  botBalls = [];
-  for (let i = 0; i < BOT_BALL_COUNT; i++) {
-    const bAngle = Math.random() * Math.PI * 2;
-    botBalls.push({
-      x: W / 2 + (i === 0 ? -30 : 30),
-      y: BOT_ARENA_Y0 + ARENA_H / 2,
-      vx: Math.cos(bAngle) * BALL_SPEED,
-      vy: Math.sin(bAngle) * BALL_SPEED,
-      r: 11,
-      finished: false,
-    });
-  }
+  const bAngle = Math.random() * Math.PI * 2;
+  botBall = {
+    x: W / 2,
+    y: BOT_ARENA_Y0 + ARENA_H / 2,
+    vx: Math.cos(bAngle) * BALL_SPEED,
+    vy: Math.sin(bAngle) * BALL_SPEED,
+    r: 14,
+  };
   topBars = BAR_HEALTHS.slice();
   botBars = BAR_HEALTHS.slice();
   topHitCount = 0;
@@ -187,6 +182,7 @@ function init() {
   popups = [];
   gameOver = false;
   started = false;
+  startTs = null;
 
   document.getElementById('start-overlay').style.display = 'flex';
 }
@@ -195,6 +191,7 @@ function startGame() {
   if (started) return;
   ensureAudio();
   started = true;
+  startTs = performance.now();
   document.getElementById('start-overlay').style.display = 'none';
 }
 document.getElementById('start-overlay').addEventListener('click', startGame);
@@ -207,61 +204,53 @@ function addPopup(x, y, text, color) {
 function update() {
   if (!started || gameOver) return;
 
-  // Oben: 3x Ball - Schaden NUR beim Kontakt mit der unteren Wand,
-  // verdreifacht sich bei jedem Treffer (3, 9, 27, 81, ...)
+  // Oben: Tribonacci-Ball (58 Treffer bis leer)
   const topFloor = TOP_ARENA_Y1 + getActiveBarIndex(topBars) * BAR_H;
   const tx0 = 12, tx1 = W - 12, ty0 = TOP_ARENA_Y0 + 10, ty1 = topFloor - 10;
-  topBall.vy += GRAVITY * SLOWMO;
-  if (topBall.vy > MAX_FALL_SPEED * SLOWMO) topBall.vy = MAX_FALL_SPEED * SLOWMO;
-  topBall.x += topBall.vx * SLOWMO;
+  topBall.vy += GRAVITY;
+  if (topBall.vy > MAX_FALL_SPEED) topBall.vy = MAX_FALL_SPEED;
+  topBall.x += topBall.vx;
   topBall.y += topBall.vy;
   if (topBall.x - topBall.r < tx0) { topBall.x = tx0 + topBall.r; topBall.vx *= -1; }
   if (topBall.x + topBall.r > tx1) { topBall.x = tx1 - topBall.r; topBall.vx *= -1; }
   if (topBall.y - topBall.r < ty0) { topBall.y = ty0 + topBall.r; topBall.vy *= -1; }
   if (topBall.y + topBall.r > ty1) {
     topBall.y = ty1 - topBall.r;
-    topBall.vy = -TOP_BOUNCE_VY * SLOWMO;
     if (!isFullyDepleted(topBars)) {
+      topBall.vy = -TOP_BOUNCE_VY;
       topHitCount++;
-      const dmg = tripling(topHitCount);
+      const dmg = tribonacci(topHitCount);
       applyDamage(topBars, dmg);
       addPopup(topBall.x, topBall.y, '-' + dmg.toLocaleString('de-DE'), TOP_COLOR);
       topHitSound(topHitCount);
-    } else if (!gameOver) {
-      gameOver = true;
+    } else {
+      topBall.vy = 0;
+      if (!gameOver) gameOver = true;
     }
   }
 
-  // Unten: 2 Fibonacci-Bälle, teilen sich denselben Trefferzähler.
-  // Beide müssen einzeln die Karo-Linie erreichen, bevor das Spiel endet.
+  // Unten: Double-Ball (49 Treffer bis leer, verdoppelt sich jedes Mal)
   const botFloor = BOT_ARENA_Y1 + getActiveBarIndex(botBars) * BAR_H;
   const bx0 = 12, bx1 = W - 12, by0 = BOT_ARENA_Y0 + 10, by1 = botFloor - 10;
-  for (const bb of botBalls) {
-    if (bb.finished) continue;
-    bb.vy += GRAVITY;
-    if (bb.vy > MAX_FALL_SPEED) bb.vy = MAX_FALL_SPEED;
-    bb.x += bb.vx;
-    bb.y += bb.vy;
-    if (bb.x - bb.r < bx0) { bb.x = bx0 + bb.r; bb.vx *= -1; }
-    if (bb.x + bb.r > bx1) { bb.x = bx1 - bb.r; bb.vx *= -1; }
-    if (bb.y - bb.r < by0) { bb.y = by0 + bb.r; bb.vy *= -1; }
-    if (bb.y + bb.r > by1) {
-      bb.y = by1 - bb.r;
-      if (!isFullyDepleted(botBars)) {
-        bb.vy = -BOUNCE_VY;
-        botHitCount++;
-        const dmg = fibonacci(botHitCount);
-        applyDamage(botBars, dmg);
-        addPopup(bb.x, bb.y, '-' + dmg.toLocaleString('de-DE'), BOT_COLOR);
-        botHitSound(botHitCount);
-      } else {
-        // Balken sind leer - dieser Ball bleibt an der Karo-Linie liegen
-        bb.vy = 0;
-        bb.finished = true;
-        if (!gameOver && botBalls.every(b => b.finished)) {
-          gameOver = true;
-        }
-      }
+  botBall.vy += GRAVITY * BOT_SLOWMO;
+  if (botBall.vy > MAX_FALL_SPEED * BOT_SLOWMO) botBall.vy = MAX_FALL_SPEED * BOT_SLOWMO;
+  botBall.x += botBall.vx * BOT_SLOWMO;
+  botBall.y += botBall.vy;
+  if (botBall.x - botBall.r < bx0) { botBall.x = bx0 + botBall.r; botBall.vx *= -1; }
+  if (botBall.x + botBall.r > bx1) { botBall.x = bx1 - botBall.r; botBall.vx *= -1; }
+  if (botBall.y - botBall.r < by0) { botBall.y = by0 + botBall.r; botBall.vy *= -1; }
+  if (botBall.y + botBall.r > by1) {
+    botBall.y = by1 - botBall.r;
+    if (!isFullyDepleted(botBars)) {
+      botBall.vy = -BOT_BOUNCE_VY * BOT_SLOWMO;
+      botHitCount++;
+      const dmg = doubling(botHitCount);
+      applyDamage(botBars, dmg);
+      addPopup(botBall.x, botBall.y, '-' + dmg.toLocaleString('de-DE'), BOT_COLOR);
+      botHitSound(botHitCount);
+    } else {
+      botBall.vy = 0;
+      if (!gameOver) gameOver = true;
     }
   }
 
@@ -326,7 +315,7 @@ function draw() {
   ctx.font = '900 20px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('3x BALL', W / 2, LABEL_H / 2);
+  ctx.fillText('TRIBONACCI BALL', W / 2, LABEL_H / 2);
 
   // Top-Arena
   const topActiveIdx = getActiveBarIndex(topBars);
@@ -355,22 +344,27 @@ function draw() {
   ctx.textAlign = 'left';
   ctx.font = 'bold 12px Arial';
   ctx.fillStyle = TOP_COLOR;
-  ctx.fillText('DAMAGE: ' + tripling(topHitCount + 1).toLocaleString('de-DE'), 12, TOP_ARENA_Y0 + 14);
+  ctx.fillText('DAMAGE: ' + tribonacci(topHitCount + 1).toLocaleString('de-DE'), 12, TOP_ARENA_Y0 + 14);
 
   drawSideBars(topBars, TOP_ARENA_Y1, TOP_COLOR);
   drawChecker(TOP_CHECKER_Y0, TOP_CHECKER_Y1);
 
-  // VS
+  // VS + Stoppuhr
   ctx.fillStyle = '#111';
-  ctx.font = '900 24px Arial';
+  ctx.font = '900 22px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('VS', W / 2, (VS_Y0 + VS_Y1) / 2);
+  ctx.fillText('VS', W / 2, (VS_Y0 + VS_Y1) / 2 - 8);
+  if (started) {
+    const elapsed = (performance.now() - startTs) / 1000;
+    ctx.font = 'bold 13px Arial';
+    ctx.fillText((gameOver ? elapsed.toFixed(1) : Math.floor(elapsed)) + 's', W / 2, (VS_Y0 + VS_Y1) / 2 + 14);
+  }
 
   // Bottom-Label
   ctx.fillStyle = BOT_COLOR;
   ctx.font = '900 20px Arial';
-  ctx.fillText('2x FIBONACCI BALLS', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
+  ctx.fillText('DOUBLE BALL', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
 
   // Bottom-Arena
   const botActiveIdx = getActiveBarIndex(botBars);
@@ -380,15 +374,13 @@ function draw() {
   ctx.beginPath();
   ctx.rect(0, BOT_ARENA_Y0, W, botFloorY - BOT_ARENA_Y0);
   ctx.clip();
-  for (const bb of botBalls) {
-    ctx.beginPath();
-    ctx.arc(bb.x, bb.y, bb.r, 0, Math.PI * 2);
-    ctx.fillStyle = BOT_COLOR;
-    ctx.fill();
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = '#000';
-    ctx.stroke();
-  }
+  ctx.beginPath();
+  ctx.arc(botBall.x, botBall.y, botBall.r, 0, Math.PI * 2);
+  ctx.fillStyle = BOT_COLOR;
+  ctx.fill();
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = '#000';
+  ctx.stroke();
   for (const p of popups) {
     if (p.color !== BOT_COLOR) continue;
     ctx.globalAlpha = Math.max(0, 1 - p.age / 40);
@@ -402,7 +394,7 @@ function draw() {
   ctx.textAlign = 'left';
   ctx.font = 'bold 12px Arial';
   ctx.fillStyle = BOT_COLOR;
-  ctx.fillText('DAMAGE: ' + fibonacci(botHitCount + 1).toLocaleString('de-DE'), 12, BOT_ARENA_Y0 + 14);
+  ctx.fillText('DAMAGE: ' + doubling(botHitCount + 1).toLocaleString('de-DE'), 12, BOT_ARENA_Y0 + 14);
 
   drawSideBars(botBars, BOT_ARENA_Y1, BOT_COLOR);
   drawChecker(BOT_CHECKER_Y0, BOT_CHECKER_Y1);
