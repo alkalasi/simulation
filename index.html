@@ -230,7 +230,6 @@ function update() {
         const dmg = squareDmg(topHitCount);
         applyDamage(topBars, dmg);
         addPopup(b.x, b.y, '-' + dmg.toLocaleString('de-DE'), TOP_COLOR);
-        topHitSound();
       } else {
         b.vy = 0;
         if (!gameOver) gameOver = true;
