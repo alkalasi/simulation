@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>1000x Quadratzahlen vs Fakultät - 70 Sekunden</title>
+<title>Speed Ball vs Fibonacci Ball</title>
 <style>
   html, body {
     margin: 0;
@@ -53,8 +53,7 @@ const ctx = canvas.getContext('2d');
 
 const W = 480;
 const LABEL_H = 36;
-const TOP_ARENA_H = 190;
-const BOT_ARENA_H = 220;
+const ARENA_H = 200;
 const BAR_H = 44;
 const CHECKER_H = 14;
 const VS_H = 40;
@@ -62,7 +61,7 @@ const VS_H = 40;
 const TOP_LABEL_Y0 = 0;
 const TOP_LABEL_Y1 = LABEL_H;
 const TOP_ARENA_Y0 = TOP_LABEL_Y1;
-const TOP_ARENA_Y1 = TOP_ARENA_Y0 + TOP_ARENA_H;
+const TOP_ARENA_Y1 = TOP_ARENA_Y0 + ARENA_H;
 const TOP_BAR_Y0 = [TOP_ARENA_Y1, TOP_ARENA_Y1 + BAR_H, TOP_ARENA_Y1 + BAR_H * 2];
 const TOP_BAR_Y1 = TOP_BAR_Y0.map(y => y + BAR_H);
 const TOP_CHECKER_Y0 = TOP_BAR_Y1[2];
@@ -74,7 +73,7 @@ const VS_Y1 = VS_Y0 + VS_H;
 const BOT_LABEL_Y0 = VS_Y1;
 const BOT_LABEL_Y1 = BOT_LABEL_Y0 + LABEL_H;
 const BOT_ARENA_Y0 = BOT_LABEL_Y1;
-const BOT_ARENA_Y1 = BOT_ARENA_Y0 + BOT_ARENA_H;
+const BOT_ARENA_Y1 = BOT_ARENA_Y0 + ARENA_H;
 const BOT_BAR_Y0 = [BOT_ARENA_Y1, BOT_ARENA_Y1 + BAR_H, BOT_ARENA_Y1 + BAR_H * 2];
 const BOT_BAR_Y1 = BOT_BAR_Y0.map(y => y + BAR_H);
 const BOT_CHECKER_Y0 = BOT_BAR_Y1[2];
@@ -97,19 +96,14 @@ resize();
 
 // Balken: Index 0 = direkt unter der Arena, Index 2 = ganz unten
 const BAR_HEALTHS = [1000, 10000000000, 1000000000000000];
-const TOP_COLOR = '#27ae60'; // 300x Quadratzahlen-Bälle (echtes n^2, 100.000 Treffer nötig)
-const BOT_COLOR = '#8e44ad'; // Fakultäts-Ball (18 Treffer)
-const TOP_COUNT = 1000;
-
-// Fair gerechnet: reine Quadratzahlen brauchen 100.000 Treffer. Mit 1000
-// Bällen und ~0.21s Sprungperiode pro Ball ergibt das rechnerisch ~70s.
-// Fakultät braucht nur 18 Treffer, dafür eine viel schwächere "Gravitation",
-// damit der Ball trotzdem lange genug in der Luft bleibt (~3.9s/Sprung) -> ~70s.
-const TOP_BALL_SPEED = 7;
-const BOT_GRAVITY = 0.0264;
-const BOT_BOUNCE_VY = 3.08;
-const MAX_FALL_SPEED = 20;
-const BALL_SPEED = 2.2;
+const TOP_COLOR = '#e74c3c'; // Speed-Ball (wird mit jedem Treffer schneller)
+const BOT_COLOR = '#8e44ad'; // Fibonacci-Ball (normales Verhalten)
+const GRAVITY = 0.22;
+const MAX_FALL_SPEED = 30;
+const BASE_BOUNCE_VY = 8;
+const BASE_BALL_SPEED = 3;
+const SPEED_GROWTH = 1.06; // +6% Geschwindigkeit pro Treffer
+const SPEED_CAP = 75; // Deckelt die Beschleunigung, damit es nicht komplett aus dem Ruder läuft
 
 let audioCtx = null;
 function ensureAudio() {
@@ -132,21 +126,25 @@ function beep(freq, dur, type, vol) {
   osc.stop(audioCtx.currentTime + dur);
 }
 let lastTopSound = 0;
-function topHitSound() {
+function topHitSound(mult) {
   const now = performance.now();
-  if (now - lastTopSound < 40) return;
+  if (now - lastTopSound < 35) return;
   lastTopSound = now;
-  beep(600, 0.04, 'square', 0.05);
+  beep(280 + mult * 25, 0.1, 'square', 0.12);
 }
-function botHitSound(n) { beep(220 + n * 14, 0.24, 'triangle', 0.17); }
+function botHitSound(n) { beep(220 + n * 6, 0.2, 'triangle', 0.15); }
 
-let topBalls, botBall, topBars, botBars, topHitCount, botHitCount, popups, gameOver, started;
+let topBall, botBall, topBars, botBars, topHitCount, botHitCount, popups, gameOver, started;
 
-function squareDmg(n) { return n * n; }
-function factorial(n) {
-  let r = 1;
-  for (let i = 2; i <= n; i++) r *= i;
-  return r;
+function fibonacci(n) {
+  let a = 1, b = 1;
+  if (n <= 2) return 1;
+  for (let i = 3; i <= n; i++) {
+    const c = a + b;
+    a = b;
+    b = c;
+  }
+  return b;
 }
 
 function applyDamage(bars, dmg) {
@@ -167,24 +165,22 @@ function getActiveBarIndex(bars) {
 }
 
 function init() {
-  topBalls = [];
-  for (let i = 0; i < TOP_COUNT; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    topBalls.push({
-      x: 16 + Math.random() * (W - 32),
-      y: TOP_ARENA_Y0 + 12 + Math.random() * (TOP_ARENA_H - 24),
-      vx: Math.cos(angle) * TOP_BALL_SPEED,
-      vy: Math.sin(angle) * TOP_BALL_SPEED,
-      r: 3.5,
-    });
-  }
+  const tAngle = Math.random() * Math.PI * 2;
+  topBall = {
+    x: W / 2,
+    y: TOP_ARENA_Y0 + ARENA_H / 2,
+    vx: Math.cos(tAngle) * BASE_BALL_SPEED,
+    vy: Math.sin(tAngle) * BASE_BALL_SPEED,
+    r: 14,
+    speedMult: 1,
+  };
   const bAngle = Math.random() * Math.PI * 2;
   botBall = {
     x: W / 2,
-    y: BOT_ARENA_Y0 + BOT_ARENA_H / 2,
-    vx: Math.cos(bAngle) * BALL_SPEED,
-    vy: Math.sin(bAngle) * BALL_SPEED,
-    r: 13,
+    y: BOT_ARENA_Y0 + ARENA_H / 2,
+    vx: Math.cos(bAngle) * BASE_BALL_SPEED,
+    vy: Math.sin(bAngle) * BASE_BALL_SPEED,
+    r: 14,
   };
   topBars = BAR_HEALTHS.slice();
   botBars = BAR_HEALTHS.slice();
@@ -213,35 +209,41 @@ function addPopup(x, y, text, color) {
 function update() {
   if (!started || gameOver) return;
 
-  // Oben: 300 Quadratzahlen-Bälle, teilen sich denselben Trefferzähler
+  // Oben: Speed-Ball - wird mit jedem Treffer am Balken schneller
+  // (Bewegung UND Sprunghöhe steigen kumulativ, gedeckelt bei SPEED_CAP)
   const topFloor = TOP_ARENA_Y1 + getActiveBarIndex(topBars) * BAR_H;
-  const tx0 = 8, tx1 = W - 8, ty0 = TOP_ARENA_Y0 + 6, ty1 = topFloor - 6;
-  for (const b of topBalls) {
-    b.x += b.vx;
-    b.y += b.vy;
-    if (b.x - b.r < tx0) { b.x = tx0 + b.r; b.vx *= -1; }
-    if (b.x + b.r > tx1) { b.x = tx1 - b.r; b.vx *= -1; }
-    if (b.y - b.r < ty0) { b.y = ty0 + b.r; b.vy *= -1; }
-    if (b.y + b.r > ty1) {
-      b.y = ty1 - b.r;
-      if (!isFullyDepleted(topBars)) {
-        b.vy *= -1;
-        topHitCount++;
-        const dmg = squareDmg(topHitCount);
-        applyDamage(topBars, dmg);
-        addPopup(b.x, b.y, '-' + dmg.toLocaleString('de-DE'), TOP_COLOR);
-      } else {
-        b.vy = 0;
-        if (!gameOver) gameOver = true;
+  const tx0 = 12, tx1 = W - 12, ty0 = TOP_ARENA_Y0 + 10, ty1 = topFloor - 10;
+  topBall.vy += GRAVITY;
+  if (topBall.vy > MAX_FALL_SPEED) topBall.vy = MAX_FALL_SPEED;
+  topBall.x += topBall.vx;
+  topBall.y += topBall.vy;
+  if (topBall.x - topBall.r < tx0) { topBall.x = tx0 + topBall.r; topBall.vx *= -1; }
+  if (topBall.x + topBall.r > tx1) { topBall.x = tx1 - topBall.r; topBall.vx *= -1; }
+  if (topBall.y - topBall.r < ty0) { topBall.y = ty0 + topBall.r; topBall.vy *= -1; }
+  if (topBall.y + topBall.r > ty1) {
+    topBall.y = ty1 - topBall.r;
+    if (!isFullyDepleted(topBars)) {
+      topHitCount++;
+      if (topBall.speedMult < SPEED_CAP) {
+        topBall.speedMult = Math.min(SPEED_CAP, topBall.speedMult * SPEED_GROWTH);
       }
+      const dir = topBall.vx >= 0 ? 1 : -1;
+      topBall.vx = dir * BASE_BALL_SPEED * topBall.speedMult;
+      topBall.vy = -BASE_BOUNCE_VY * topBall.speedMult;
+      const dmg = topHitCount * 100000;
+      applyDamage(topBars, dmg);
+      addPopup(topBall.x, topBall.y, '-' + dmg.toLocaleString('de-DE'), TOP_COLOR);
+      topHitSound(topBall.speedMult);
+    } else {
+      topBall.vy = 0;
+      if (!gameOver) gameOver = true;
     }
   }
 
-  // Unten: Fakultäts-Ball (nur 18 Treffer bis leer, dafür sehr schwache
-  // Gravitation - bleibt lange in der Luft)
+  // Unten: Fibonacci-Ball - normales Verhalten, keine Beschleunigung
   const botFloor = BOT_ARENA_Y1 + getActiveBarIndex(botBars) * BAR_H;
   const bx0 = 12, bx1 = W - 12, by0 = BOT_ARENA_Y0 + 10, by1 = botFloor - 10;
-  botBall.vy += BOT_GRAVITY;
+  botBall.vy += GRAVITY;
   if (botBall.vy > MAX_FALL_SPEED) botBall.vy = MAX_FALL_SPEED;
   botBall.x += botBall.vx;
   botBall.y += botBall.vy;
@@ -251,9 +253,9 @@ function update() {
   if (botBall.y + botBall.r > by1) {
     botBall.y = by1 - botBall.r;
     if (!isFullyDepleted(botBars)) {
-      botBall.vy = -BOT_BOUNCE_VY;
+      botBall.vy = -BASE_BOUNCE_VY;
       botHitCount++;
-      const dmg = factorial(botHitCount);
+      const dmg = fibonacci(botHitCount);
       applyDamage(botBars, dmg);
       addPopup(botBall.x, botBall.y, '-' + dmg.toLocaleString('de-DE'), BOT_COLOR);
       botHitSound(botHitCount);
@@ -321,10 +323,10 @@ function draw() {
 
   // Top-Label
   ctx.fillStyle = TOP_COLOR;
-  ctx.font = '900 18px Arial';
+  ctx.font = '900 20px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('1000x SQUARE BALLS', W / 2, LABEL_H / 2);
+  ctx.fillText('SPEED BALL', W / 2, LABEL_H / 2);
 
   // Top-Arena
   const topActiveIdx = getActiveBarIndex(topBars);
@@ -334,17 +336,27 @@ function draw() {
   ctx.beginPath();
   ctx.rect(0, TOP_ARENA_Y0, W, topFloorY - TOP_ARENA_Y0);
   ctx.clip();
-  for (const b of topBalls) {
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+  ctx.beginPath();
+  ctx.arc(topBall.x, topBall.y, topBall.r, 0, Math.PI * 2);
+  ctx.fillStyle = TOP_COLOR;
+  ctx.fill();
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = '#000';
+  ctx.stroke();
+  for (const p of popups) {
+    if (p.color !== TOP_COLOR) continue;
+    ctx.globalAlpha = Math.max(0, 1 - p.age / 40);
     ctx.fillStyle = TOP_COLOR;
-    ctx.fill();
+    ctx.font = 'bold 14px Arial';
+    ctx.fillText(p.text, p.x, p.y - p.age * 0.6);
+    ctx.globalAlpha = 1;
   }
   ctx.restore();
   ctx.textAlign = 'left';
   ctx.font = 'bold 12px Arial';
   ctx.fillStyle = TOP_COLOR;
-  ctx.fillText('DAMAGE: ' + squareDmg(topHitCount + 1).toLocaleString('de-DE'), 12, TOP_ARENA_Y0 + 14);
+  const speedLabel = topBall.speedMult >= SPEED_CAP ? 'max' : topBall.speedMult.toFixed(1) + 'x';
+  ctx.fillText('DAMAGE: ' + ((topHitCount + 1) * 100000).toLocaleString('de-DE') + '  |  SPEED: ' + speedLabel, 12, TOP_ARENA_Y0 + 14);
 
   drawSideBars(topBars, TOP_ARENA_Y1, TOP_COLOR);
   drawChecker(TOP_CHECKER_Y0, TOP_CHECKER_Y1);
@@ -359,7 +371,7 @@ function draw() {
   // Bottom-Label
   ctx.fillStyle = BOT_COLOR;
   ctx.font = '900 20px Arial';
-  ctx.fillText('FACTORIAL BALL', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
+  ctx.fillText('FIBONACCI BALL', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
 
   // Bottom-Arena
   const botActiveIdx = getActiveBarIndex(botBars);
@@ -380,7 +392,7 @@ function draw() {
     if (p.color !== BOT_COLOR) continue;
     ctx.globalAlpha = Math.max(0, 1 - p.age / 40);
     ctx.fillStyle = BOT_COLOR;
-    ctx.font = 'bold 13px Arial';
+    ctx.font = 'bold 14px Arial';
     ctx.textAlign = 'center';
     ctx.fillText(p.text, p.x, p.y - p.age * 0.6);
     ctx.globalAlpha = 1;
@@ -389,7 +401,7 @@ function draw() {
   ctx.textAlign = 'left';
   ctx.font = 'bold 12px Arial';
   ctx.fillStyle = BOT_COLOR;
-  ctx.fillText('DAMAGE: ' + factorial(botHitCount + 1).toLocaleString('de-DE'), 12, BOT_ARENA_Y0 + 14);
+  ctx.fillText('DAMAGE: ' + fibonacci(botHitCount + 1).toLocaleString('de-DE'), 12, BOT_ARENA_Y0 + 14);
 
   drawSideBars(botBars, BOT_ARENA_Y1, BOT_COLOR);
   drawChecker(BOT_CHECKER_Y0, BOT_CHECKER_Y1);
