@@ -209,11 +209,11 @@ function update() {
   if (!started || gameOver) return;
 
   // Oben: Speed-Ball - wird mit jedem Treffer am Balken schneller
-  // (Bewegung UND Sprunghöhe steigen kumulativ, ohne Limit)
+  // (Bewegung UND Sprunghöhe steigen kumulativ, gedeckelt, damit nichts
+  // durchdreht). Einfache, stabile Physik ohne Zwischenschritte.
   const topFloor = TOP_ARENA_Y1 + getActiveBarIndex(topBars) * BAR_H;
   const tx0 = 12, tx1 = W - 12, ty0 = TOP_ARENA_Y0 + 10, ty1 = topFloor - 10;
   topBall.vy += GRAVITY;
-  if (topBall.vy > MAX_FALL_SPEED) topBall.vy = MAX_FALL_SPEED;
   topBall.x += topBall.vx;
   topBall.y += topBall.vy;
   if (topBall.x - topBall.r < tx0) { topBall.x = tx0 + topBall.r; topBall.vx *= -1; }
