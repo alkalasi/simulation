@@ -138,7 +138,7 @@ function botHitSound() {
 
 let topBall, botBalls, topBars, botBars, topHitCount, botHitCount, popups, gameOver, started;
 
-function growDmg(n) { return 1 + (n - 1) * n / 2; }
+function growDmg(n) { return n * n; }
 function fibonacci(n) {
   let a = 1, b = 1;
   if (n <= 2) return 1;
