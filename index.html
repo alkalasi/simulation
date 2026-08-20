@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Fibonacci Ball vs Slow Factorial Ball</title>
+<title>Grow Ball vs 10x Fibonacci Balls</title>
 <style>
   html, body {
     margin: 0;
@@ -53,7 +53,7 @@ const ctx = canvas.getContext('2d');
 
 const W = 480;
 const LABEL_H = 36;
-const ARENA_H = 200;
+const ARENA_H = 210;
 const BAR_H = 44;
 const CHECKER_H = 14;
 const VS_H = 40;
@@ -96,14 +96,15 @@ resize();
 
 // Balken: Index 0 = direkt unter der Arena, Index 2 = ganz unten
 const BAR_HEALTHS = [1000, 10000000000, 1000000000000000];
-const TOP_COLOR = '#9b59b6'; // Fibonacci-Ball (normales Verhalten)
-const BOT_COLOR = '#2980b9'; // Slow-Factorial-Ball (wird bei jedem Treffer langsamer)
+const TOP_COLOR = '#16a085'; // Grow Ball (fester Schaden, wird aber größer)
+const BOT_COLOR = '#c0392b'; // 10x Fibonacci-Bälle (teilen sich Trefferzähler)
 const GRAVITY = 0.22;
 const MAX_FALL_SPEED = 30;
 const BASE_BOUNCE_VY = 9;
 const BASE_BALL_SPEED = 3.2;
-const SLOWDOWN = 0.8; // Zeit wird bei jedem Bodenkontakt um 20% weiter gestreckt
-const MIN_SLOWMO = 0.01; // Untergrenze, damit nichts einfriert
+const GROW_PER_HIT = 1.4; // Radius wächst pro Treffer
+const START_RADIUS = 10;
+const BOT_COUNT = 1;
 
 let audioCtx = null;
 function ensureAudio() {
@@ -125,11 +126,18 @@ function beep(freq, dur, type, vol) {
   osc.start();
   osc.stop(audioCtx.currentTime + dur);
 }
-function topHitSound(n) { beep(300 + n * 6, 0.16, 'triangle', 0.14); }
-function botHitSound(mult) { beep(180 + mult * 60, 0.2, 'square', 0.14); }
+function topHitSound(r) { beep(200 + r * 2, 0.16, 'sine', 0.14); }
+let lastBotSound = 0;
+function botHitSound() {
+  const now = performance.now();
+  if (now - lastBotSound < 40) return;
+  lastBotSound = now;
+  beep(320, 0.08, 'triangle', 0.09);
+}
 
-let topBall, botBall, topBars, botBars, topHitCount, botHitCount, popups, gameOver, started;
+let topBall, botBalls, topBars, botBars, topHitCount, botHitCount, popups, gameOver, started;
 
+function growDmg(n) { return 1 + (n - 1) * n / 2; }
 function fibonacci(n) {
   let a = 1, b = 1;
   if (n <= 2) return 1;
@@ -139,11 +147,6 @@ function fibonacci(n) {
     b = c;
   }
   return b;
-}
-function factorial(n) {
-  let r = 1;
-  for (let i = 2; i <= n; i++) r *= i;
-  return r;
 }
 
 function applyDamage(bars, dmg) {
@@ -170,17 +173,19 @@ function init() {
     y: TOP_ARENA_Y0 + ARENA_H / 2,
     vx: Math.cos(tAngle) * BASE_BALL_SPEED,
     vy: Math.sin(tAngle) * BASE_BALL_SPEED,
-    r: 14,
+    r: START_RADIUS,
   };
-  const bAngle = Math.random() * Math.PI * 2;
-  botBall = {
-    x: W / 2,
-    y: BOT_ARENA_Y0 + ARENA_H / 2,
-    vx: Math.cos(bAngle) * BASE_BALL_SPEED,
-    vy: Math.sin(bAngle) * BASE_BALL_SPEED,
-    r: 14,
-    slowMult: 0.8,
-  };
+  botBalls = [];
+  for (let i = 0; i < BOT_COUNT; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    botBalls.push({
+      x: 20 + Math.random() * (W - 40),
+      y: BOT_ARENA_Y0 + 15 + Math.random() * (ARENA_H - 30),
+      vx: Math.cos(angle) * BASE_BALL_SPEED,
+      vy: Math.sin(angle) * BASE_BALL_SPEED,
+      r: 7,
+    });
+  }
   topBars = BAR_HEALTHS.slice();
   botBars = BAR_HEALTHS.slice();
   topHitCount = 0;
@@ -208,7 +213,8 @@ function addPopup(x, y, text, color) {
 function update() {
   if (!started || gameOver) return;
 
-  // Oben: Fibonacci-Ball - ganz normales Verhalten, feste Physik
+  // Oben: Grow Ball - macht immer 1.000.000 Schaden, wird aber bei jedem
+  // Treffer größer (bis zu einer Obergrenze, damit er in die Arena passt)
   const topFloor = TOP_ARENA_Y1 + getActiveBarIndex(topBars) * BAR_H;
   const tx0 = 12, tx1 = W - 12, ty0 = TOP_ARENA_Y0 + 10, ty1 = topFloor - 10;
   topBall.vy += GRAVITY;
@@ -223,41 +229,41 @@ function update() {
     if (!isFullyDepleted(topBars)) {
       topBall.vy = -BASE_BOUNCE_VY;
       topHitCount++;
-      const dmg = fibonacci(topHitCount);
+      topBall.r += GROW_PER_HIT;
+      const dmg = growDmg(topHitCount);
       applyDamage(topBars, dmg);
       addPopup(topBall.x, topBall.y, '-' + dmg.toLocaleString('de-DE'), TOP_COLOR);
-      topHitSound(topHitCount);
+      topHitSound(topBall.r);
     } else {
       topBall.vy = 0;
       if (!gameOver) gameOver = true;
     }
   }
 
-  // Unten: Slow-Factorial-Ball - macht Fakultäts-Schaden, wird bei jedem
-  // Bodenkontakt in mehr Zeitlupe versetzt (Gravitation & Bewegung mit
-  // Zeitfaktor gestreckt), springt dabei aber immer exakt gleich hoch
+  // Unten: 10 kleine Fibonacci-Bälle, teilen sich denselben Trefferzähler
   const botFloor = BOT_ARENA_Y1 + getActiveBarIndex(botBars) * BAR_H;
-  const bx0 = 12, bx1 = W - 12, by0 = BOT_ARENA_Y0 + 10, by1 = botFloor - 10;
-  botBall.vy += GRAVITY * botBall.slowMult;
-  if (botBall.vy > MAX_FALL_SPEED * botBall.slowMult) botBall.vy = MAX_FALL_SPEED * botBall.slowMult;
-  botBall.x += botBall.vx * botBall.slowMult;
-  botBall.y += botBall.vy;
-  if (botBall.x - botBall.r < bx0) { botBall.x = bx0 + botBall.r; botBall.vx *= -1; }
-  if (botBall.x + botBall.r > bx1) { botBall.x = bx1 - botBall.r; botBall.vx *= -1; }
-  if (botBall.y - botBall.r < by0) { botBall.y = by0 + botBall.r; botBall.vy *= -1; }
-  if (botBall.y + botBall.r > by1) {
-    botBall.y = by1 - botBall.r;
-    if (!isFullyDepleted(botBars)) {
-      botHitCount++;
-      botBall.slowMult = Math.max(MIN_SLOWMO, botBall.slowMult * SLOWDOWN);
-      botBall.vy = -BASE_BOUNCE_VY * Math.sqrt(botBall.slowMult);
-      const dmg = factorial(botHitCount);
-      applyDamage(botBars, dmg);
-      addPopup(botBall.x, botBall.y, '-' + dmg.toLocaleString('de-DE'), BOT_COLOR);
-      botHitSound(botBall.slowMult);
-    } else {
-      botBall.vy = 0;
-      if (!gameOver) gameOver = true;
+  const bx0 = 10, bx1 = W - 10, by0 = BOT_ARENA_Y0 + 8, by1 = botFloor - 8;
+  for (const bb of botBalls) {
+    bb.vy += GRAVITY;
+    if (bb.vy > MAX_FALL_SPEED) bb.vy = MAX_FALL_SPEED;
+    bb.x += bb.vx;
+    bb.y += bb.vy;
+    if (bb.x - bb.r < bx0) { bb.x = bx0 + bb.r; bb.vx *= -1; }
+    if (bb.x + bb.r > bx1) { bb.x = bx1 - bb.r; bb.vx *= -1; }
+    if (bb.y - bb.r < by0) { bb.y = by0 + bb.r; bb.vy *= -1; }
+    if (bb.y + bb.r > by1) {
+      bb.y = by1 - bb.r;
+      if (!isFullyDepleted(botBars)) {
+        bb.vy = -BASE_BOUNCE_VY;
+        botHitCount++;
+        const dmg = fibonacci(botHitCount);
+        applyDamage(botBars, dmg);
+        addPopup(bb.x, bb.y, '-' + dmg.toLocaleString('de-DE'), BOT_COLOR);
+        botHitSound();
+      } else {
+        bb.vy = 0;
+        if (!gameOver) gameOver = true;
+      }
     }
   }
 
@@ -322,7 +328,7 @@ function draw() {
   ctx.font = '900 20px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('FIBONACCI BALL', W / 2, LABEL_H / 2);
+  ctx.fillText('GROW BALL', W / 2, LABEL_H / 2);
 
   // Top-Arena
   const topActiveIdx = getActiveBarIndex(topBars);
@@ -351,7 +357,7 @@ function draw() {
   ctx.textAlign = 'left';
   ctx.font = 'bold 12px Arial';
   ctx.fillStyle = TOP_COLOR;
-  ctx.fillText('DAMAGE: ' + fibonacci(topHitCount + 1).toLocaleString('de-DE'), 12, TOP_ARENA_Y0 + 14);
+  ctx.fillText('DAMAGE: ' + growDmg(topHitCount + 1).toLocaleString('de-DE'), 12, TOP_ARENA_Y0 + 14);
 
   drawSideBars(topBars, TOP_ARENA_Y1, TOP_COLOR);
   drawChecker(TOP_CHECKER_Y0, TOP_CHECKER_Y1);
@@ -366,7 +372,7 @@ function draw() {
   // Bottom-Label
   ctx.fillStyle = BOT_COLOR;
   ctx.font = '900 20px Arial';
-  ctx.fillText('SLOW FACTORIAL BALL', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
+  ctx.fillText('FIBONACCI BALL', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
 
   // Bottom-Arena
   const botActiveIdx = getActiveBarIndex(botBars);
@@ -376,18 +382,20 @@ function draw() {
   ctx.beginPath();
   ctx.rect(0, BOT_ARENA_Y0, W, botFloorY - BOT_ARENA_Y0);
   ctx.clip();
-  ctx.beginPath();
-  ctx.arc(botBall.x, botBall.y, botBall.r, 0, Math.PI * 2);
-  ctx.fillStyle = BOT_COLOR;
-  ctx.fill();
-  ctx.lineWidth = 1.5;
-  ctx.strokeStyle = '#000';
-  ctx.stroke();
+  for (const bb of botBalls) {
+    ctx.beginPath();
+    ctx.arc(bb.x, bb.y, bb.r, 0, Math.PI * 2);
+    ctx.fillStyle = BOT_COLOR;
+    ctx.fill();
+    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = '#000';
+    ctx.stroke();
+  }
   for (const p of popups) {
     if (p.color !== BOT_COLOR) continue;
     ctx.globalAlpha = Math.max(0, 1 - p.age / 40);
     ctx.fillStyle = BOT_COLOR;
-    ctx.font = 'bold 14px Arial';
+    ctx.font = 'bold 13px Arial';
     ctx.textAlign = 'center';
     ctx.fillText(p.text, p.x, p.y - p.age * 0.6);
     ctx.globalAlpha = 1;
@@ -396,7 +404,7 @@ function draw() {
   ctx.textAlign = 'left';
   ctx.font = 'bold 12px Arial';
   ctx.fillStyle = BOT_COLOR;
-  ctx.fillText('DAMAGE: ' + factorial(botHitCount + 1).toLocaleString('de-DE'), 12, BOT_ARENA_Y0 + 14);
+  ctx.fillText('DAMAGE: ' + fibonacci(botHitCount + 1).toLocaleString('de-DE'), 12, BOT_ARENA_Y0 + 14);
 
   drawSideBars(botBars, BOT_ARENA_Y1, BOT_COLOR);
   drawChecker(BOT_CHECKER_Y0, BOT_CHECKER_Y1);
