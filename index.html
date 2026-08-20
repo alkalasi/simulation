@@ -104,6 +104,7 @@ const BASE_BOUNCE_VY = 9;
 const BASE_BALL_SPEED = 3.2;
 const GROW_PER_HIT = 1.4; // Radius wächst pro Treffer
 const START_RADIUS = 10;
+const SOUND_MAX_RADIUS = 100; // ab dieser Größe macht der Grow Ball keinen Sound mehr
 const BOT_COUNT = 1;
 
 let audioCtx = null;
@@ -233,7 +234,7 @@ function update() {
       const dmg = growDmg(topHitCount);
       applyDamage(topBars, dmg);
       addPopup(topBall.x, topBall.y, '-' + dmg.toLocaleString('de-DE'), TOP_COLOR);
-      topHitSound(topBall.r);
+      if (topBall.r < SOUND_MAX_RADIUS) topHitSound(topBall.r);
     } else {
       topBall.vy = 0;
       if (!gameOver) gameOver = true;
