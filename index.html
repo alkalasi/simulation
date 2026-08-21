@@ -105,7 +105,7 @@ const BASE_BALL_SPEED = 3.2;
 const GROW_PER_HIT = 1.4; // Radius wächst pro Treffer
 const START_RADIUS = 10;
 const SOUND_MAX_RADIUS = 100; // ab dieser Größe macht der Grow Ball keinen Sound mehr
-const BOT_COUNT = 1;
+const BOT_COUNT = 2;
 
 let audioCtx = null;
 function ensureAudio() {
@@ -138,7 +138,6 @@ function botHitSound() {
 
 let topBall, botBalls, topBars, botBars, topHitCount, botHitCount, popups, gameOver, started;
 
-function growDmg(n) { return n * n; }
 function fibonacci(n) {
   let a = 1, b = 1;
   if (n <= 2) return 1;
@@ -231,7 +230,7 @@ function update() {
       topBall.vy = -BASE_BOUNCE_VY;
       topHitCount++;
       topBall.r += GROW_PER_HIT;
-      const dmg = growDmg(topHitCount);
+      const dmg = fibonacci(topHitCount);
       applyDamage(topBars, dmg);
       addPopup(topBall.x, topBall.y, '-' + dmg.toLocaleString('de-DE'), TOP_COLOR);
       if (topBall.r < SOUND_MAX_RADIUS) topHitSound(topBall.r);
@@ -358,7 +357,7 @@ function draw() {
   ctx.textAlign = 'left';
   ctx.font = 'bold 12px Arial';
   ctx.fillStyle = TOP_COLOR;
-  ctx.fillText('DAMAGE: ' + growDmg(topHitCount + 1).toLocaleString('de-DE'), 12, TOP_ARENA_Y0 + 14);
+  ctx.fillText('DAMAGE: ' + fibonacci(topHitCount + 1).toLocaleString('de-DE'), 12, TOP_ARENA_Y0 + 14);
 
   drawSideBars(topBars, TOP_ARENA_Y1, TOP_COLOR);
   drawChecker(TOP_CHECKER_Y0, TOP_CHECKER_Y1);
@@ -373,7 +372,7 @@ function draw() {
   // Bottom-Label
   ctx.fillStyle = BOT_COLOR;
   ctx.font = '900 20px Arial';
-  ctx.fillText('FIBONACCI BALL', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
+  ctx.fillText('2x FIBONACCI BALLS', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
 
   // Bottom-Arena
   const botActiveIdx = getActiveBarIndex(botBars);
