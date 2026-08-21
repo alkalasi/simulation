@@ -103,6 +103,8 @@ const GRAVITY = 0.22;
 const MAX_FALL_SPEED = 30;
 const TOP_BOUNCE_VY = 9.79;
 const BOT_BOUNCE_VY = 9.79; // jetzt gleich schnell wie der Grow Ball
+const SLOWDOWN = 0.8; // Zeit wird bei jedem Bodenkontakt um 20% weiter gestreckt
+const MIN_SLOWMO = 0.01; // Untergrenze, damit nichts einfriert
 const BASE_BALL_SPEED = 3.2;
 const GROW_PER_HIT = 2; // Radius wächst pro Treffer
 const START_RADIUS = 10;
@@ -150,6 +152,11 @@ function fibonacci(n) {
   }
   return b;
 }
+function factorial(n) {
+  let r = 1;
+  for (let i = 2; i <= n; i++) r *= i;
+  return r;
+}
 
 function applyDamage(bars, dmg) {
   for (let i = 0; i < bars.length; i++) {
@@ -186,6 +193,7 @@ function init() {
       vx: Math.cos(angle) * BASE_BALL_SPEED,
       vy: Math.sin(angle) * BASE_BALL_SPEED,
       r: 7,
+      slowMult: 0.8,
     });
   }
   topBars = BAR_HEALTHS.slice();
@@ -247,9 +255,9 @@ function update() {
   const botFloor = BOT_ARENA_Y1 + getActiveBarIndex(botBars) * BAR_H;
   const bx0 = 10, bx1 = W - 10, by0 = BOT_ARENA_Y0 + 8, by1 = botFloor - 8;
   for (const bb of botBalls) {
-    bb.vy += GRAVITY;
-    if (bb.vy > MAX_FALL_SPEED) bb.vy = MAX_FALL_SPEED;
-    bb.x += bb.vx;
+    bb.vy += GRAVITY * bb.slowMult;
+    if (bb.vy > MAX_FALL_SPEED * bb.slowMult) bb.vy = MAX_FALL_SPEED * bb.slowMult;
+    bb.x += bb.vx * bb.slowMult;
     bb.y += bb.vy;
     if (bb.x - bb.r < bx0) { bb.x = bx0 + bb.r; bb.vx *= -1; }
     if (bb.x + bb.r > bx1) { bb.x = bx1 - bb.r; bb.vx *= -1; }
@@ -257,9 +265,10 @@ function update() {
     if (bb.y + bb.r > by1) {
       bb.y = by1 - bb.r;
       if (!isFullyDepleted(botBars)) {
-        bb.vy = -BOT_BOUNCE_VY;
         botHitCount++;
-        const dmg = fibonacci(botHitCount);
+        bb.slowMult = Math.max(MIN_SLOWMO, bb.slowMult * SLOWDOWN);
+        bb.vy = -BOT_BOUNCE_VY * Math.sqrt(bb.slowMult);
+        const dmg = factorial(botHitCount);
         applyDamage(botBars, dmg);
         addPopup(bb.x, bb.y, '-' + dmg.toLocaleString('de-DE'), BOT_COLOR);
         botHitSound();
@@ -375,7 +384,7 @@ function draw() {
   // Bottom-Label
   ctx.fillStyle = BOT_COLOR;
   ctx.font = '900 20px Arial';
-  ctx.fillText('FIBONACCI BALL', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
+  ctx.fillText('SLOW FACTORIAL BALL', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
 
   // Bottom-Arena
   const botActiveIdx = getActiveBarIndex(botBars);
@@ -407,7 +416,7 @@ function draw() {
   ctx.textAlign = 'left';
   ctx.font = 'bold 12px Arial';
   ctx.fillStyle = BOT_COLOR;
-  ctx.fillText('DAMAGE: ' + fibonacci(botHitCount + 1).toLocaleString('de-DE'), 12, BOT_ARENA_Y0 + 14);
+  ctx.fillText('DAMAGE: ' + factorial(botHitCount + 1).toLocaleString('de-DE'), 12, BOT_ARENA_Y0 + 14);
 
   drawSideBars(botBars, BOT_ARENA_Y1, BOT_COLOR);
   drawChecker(BOT_CHECKER_Y0, BOT_CHECKER_Y1);
