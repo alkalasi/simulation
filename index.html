@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>1000x Square Numbers vs Factorial - 70 Seconds</title>
+<title>Speed Ball vs Grow Ball</title>
 <style>
   html, body {
     margin: 0;
@@ -43,7 +43,7 @@
 <div id="wrap">
   <div id="canvas-wrap">
     <canvas id="c"></canvas>
-    <div id="start-overlay">Tap to start<br><span style="font-size:0.6em; opacity:0.85;">(or press K)</span></div>
+    <div id="start-overlay">Tap to start<br><span style="font-size:0.6em; opacity:0.85;">(oder K drücken)</span></div>
   </div>
 </div>
 
@@ -53,8 +53,8 @@ const ctx = canvas.getContext('2d');
 
 const W = 480;
 const LABEL_H = 36;
-const TOP_ARENA_H = 190;
-const BOT_ARENA_H = 220;
+const TOP_ARENA_H = 210;
+const BOT_ARENA_H = 350; // größer, damit der wachsende Ball genug Platz hat
 const BAR_H = 44;
 const CHECKER_H = 14;
 const VS_H = 40;
@@ -95,21 +95,20 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
-// Bars: index 0 = right under the arena, index 2 = at the very bottom
+// Balken: Index 0 = direkt unter der Arena, Index 2 = ganz unten
 const BAR_HEALTHS = [1000, 10000000000, 1000000000000000];
-const TOP_COLOR = '#27ae60'; // 1000x square-number balls (real n^2, needs 100,000 hits)
-const BOT_COLOR = '#8e44ad'; // Factorial ball (18 hits)
-const TOP_COUNT = 1000;
+const TOP_COLOR = '#e67e22'; // Speed Ball
+const BOT_COLOR = '#16a085'; // Grow Ball
+const GRAVITY = 0.22;
+const MAX_FALL_SPEED = 30;
+const BOUNCE_VY = 9.79; // gleiche Basis-Sprunghöhe für beide
+const BASE_BALL_SPEED = 3.2;
 
-// Balanced fairly: pure square numbers need 100,000 hits. With 1000 balls
-// and a ~0.21s bounce period per ball that works out to roughly 70s.
-// Factorial only needs 18 hits, but with a much weaker "gravity" so the
-// ball stays airborne long enough (~3.9s/bounce) -> also ~70s.
-const TOP_BALL_SPEED = 7;
-const BOT_GRAVITY = 0.0264;
-const BOT_BOUNCE_VY = 3.08;
-const MAX_FALL_SPEED = 20;
-const BALL_SPEED = 2.2;
+const SPEED_GROWTH = 1.03; // Speed Ball wird pro Treffer 3% schneller
+const SPEED_CAP = 50; // Deckelt die Beschleunigung, damit nichts abstürzt
+const GROW_PER_HIT = 3; // Grow Ball wächst pro Treffer im Radius
+const START_RADIUS = 10;
+const SOUND_MAX_RADIUS = 100; // ab dieser Größe macht der Grow Ball keinen Sound mehr
 
 let audioCtx = null;
 function ensureAudio() {
@@ -131,23 +130,13 @@ function beep(freq, dur, type, vol) {
   osc.start();
   osc.stop(audioCtx.currentTime + dur);
 }
-let lastTopSound = 0;
-function topHitSound() {
-  const now = performance.now();
-  if (now - lastTopSound < 40) return;
-  lastTopSound = now;
-  beep(600, 0.04, 'square', 0.05);
-}
-function botHitSound(n) { beep(220 + n * 14, 0.24, 'triangle', 0.17); }
+function topHitSound(mult) { beep(280 + mult * 8, 0.12, 'square', 0.1); }
+function botHitSound(r) { beep(200 + r * 2, 0.16, 'sine', 0.14); }
 
-let topBalls, botBall, topBars, botBars, topHitCount, botHitCount, popups, gameOver, started;
+let topBall, botBall, topBars, botBars, topHitCount, botHitCount, popups, gameOver, started;
 
-function squareDmg(n) { return n * n; }
-function factorial(n) {
-  let r = 1;
-  for (let i = 2; i <= n; i++) r *= i;
-  return r;
-}
+// Beide Seiten teilen sich dieselbe Formel: startet bei 1, +10% pro Treffer
+function dmgFormula(n) { return Math.round(Math.pow(1.1, n - 1)); }
 
 function applyDamage(bars, dmg) {
   for (let i = 0; i < bars.length; i++) {
@@ -167,24 +156,22 @@ function getActiveBarIndex(bars) {
 }
 
 function init() {
-  topBalls = [];
-  for (let i = 0; i < TOP_COUNT; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    topBalls.push({
-      x: 16 + Math.random() * (W - 32),
-      y: TOP_ARENA_Y0 + 12 + Math.random() * (TOP_ARENA_H - 24),
-      vx: Math.cos(angle) * TOP_BALL_SPEED,
-      vy: Math.sin(angle) * TOP_BALL_SPEED,
-      r: 3.5,
-    });
-  }
+  const tAngle = Math.random() * Math.PI * 2;
+  topBall = {
+    x: W / 2,
+    y: TOP_ARENA_Y0 + TOP_ARENA_H / 2,
+    vx: Math.cos(tAngle) * BASE_BALL_SPEED,
+    vy: Math.sin(tAngle) * BASE_BALL_SPEED,
+    r: 14,
+    speedMult: 1,
+  };
   const bAngle = Math.random() * Math.PI * 2;
   botBall = {
     x: W / 2,
     y: BOT_ARENA_Y0 + BOT_ARENA_H / 2,
-    vx: Math.cos(bAngle) * BALL_SPEED,
-    vy: Math.sin(bAngle) * BALL_SPEED,
-    r: 13,
+    vx: Math.cos(bAngle) * BASE_BALL_SPEED,
+    vy: Math.sin(bAngle) * BASE_BALL_SPEED,
+    r: START_RADIUS,
   };
   topBars = BAR_HEALTHS.slice();
   botBars = BAR_HEALTHS.slice();
@@ -213,36 +200,40 @@ function addPopup(x, y, text, color) {
 function update() {
   if (!started || gameOver) return;
 
-  // Top: 1000 square-number balls, sharing a single hit counter
+  // Oben: Speed Ball - wird mit jedem Treffer schneller (Bewegung + Sprunghöhe)
   const topFloor = TOP_ARENA_Y1 + getActiveBarIndex(topBars) * BAR_H;
-  const tx0 = 8, tx1 = W - 8, ty0 = TOP_ARENA_Y0 + 6, ty1 = topFloor - 6;
-  for (const b of topBalls) {
-    b.x += b.vx;
-    b.y += b.vy;
-    if (b.x - b.r < tx0) { b.x = tx0 + b.r; b.vx *= -1; }
-    if (b.x + b.r > tx1) { b.x = tx1 - b.r; b.vx *= -1; }
-    if (b.y - b.r < ty0) { b.y = ty0 + b.r; b.vy *= -1; }
-    if (b.y + b.r > ty1) {
-      b.y = ty1 - b.r;
-      if (!isFullyDepleted(topBars)) {
-        b.vy *= -1;
-        topHitCount++;
-        const dmg = squareDmg(topHitCount);
-        applyDamage(topBars, dmg);
-        addPopup(b.x, b.y, '-' + dmg.toLocaleString('en-US'), TOP_COLOR);
-        topHitSound();
-      } else {
-        b.vy = 0;
-        if (!gameOver) gameOver = true;
+  const tx0 = 12, tx1 = W - 12, ty0 = TOP_ARENA_Y0 + 10, ty1 = topFloor - 10;
+  topBall.vy += GRAVITY;
+  if (topBall.vy > MAX_FALL_SPEED) topBall.vy = MAX_FALL_SPEED;
+  topBall.x += topBall.vx;
+  topBall.y += topBall.vy;
+  if (topBall.x - topBall.r < tx0) { topBall.x = tx0 + topBall.r; topBall.vx *= -1; }
+  if (topBall.x + topBall.r > tx1) { topBall.x = tx1 - topBall.r; topBall.vx *= -1; }
+  if (topBall.y - topBall.r < ty0) { topBall.y = ty0 + topBall.r; topBall.vy *= -1; }
+  if (topBall.y + topBall.r > ty1) {
+    topBall.y = ty1 - topBall.r;
+    if (!isFullyDepleted(topBars)) {
+      topHitCount++;
+      if (topBall.speedMult < SPEED_CAP) {
+        topBall.speedMult = Math.min(SPEED_CAP, topBall.speedMult * SPEED_GROWTH);
       }
+      const dir = topBall.vx >= 0 ? 1 : -1;
+      topBall.vx = dir * BASE_BALL_SPEED * topBall.speedMult;
+      topBall.vy = -BOUNCE_VY * topBall.speedMult;
+      const dmg = dmgFormula(topHitCount);
+      applyDamage(topBars, dmg);
+      addPopup(topBall.x, topBall.y, '-' + dmg.toLocaleString('de-DE'), TOP_COLOR);
+      topHitSound(topBall.speedMult);
+    } else {
+      topBall.vy = 0;
+      if (!gameOver) gameOver = true;
     }
   }
 
-  // Bottom: factorial ball (only 18 hits to clear, but very weak
-  // gravity - stays in the air a long time)
+  // Unten: Grow Ball - wird mit jedem Treffer größer, Schaden gleiche Formel
   const botFloor = BOT_ARENA_Y1 + getActiveBarIndex(botBars) * BAR_H;
   const bx0 = 12, bx1 = W - 12, by0 = BOT_ARENA_Y0 + 10, by1 = botFloor - 10;
-  botBall.vy += BOT_GRAVITY;
+  botBall.vy += GRAVITY;
   if (botBall.vy > MAX_FALL_SPEED) botBall.vy = MAX_FALL_SPEED;
   botBall.x += botBall.vx;
   botBall.y += botBall.vy;
@@ -252,12 +243,13 @@ function update() {
   if (botBall.y + botBall.r > by1) {
     botBall.y = by1 - botBall.r;
     if (!isFullyDepleted(botBars)) {
-      botBall.vy = -BOT_BOUNCE_VY;
+      botBall.vy = -BOUNCE_VY;
       botHitCount++;
-      const dmg = factorial(botHitCount);
+      botBall.r += GROW_PER_HIT;
+      const dmg = dmgFormula(botHitCount);
       applyDamage(botBars, dmg);
-      addPopup(botBall.x, botBall.y, '-' + dmg.toLocaleString('en-US'), BOT_COLOR);
-      botHitSound(botHitCount);
+      addPopup(botBall.x, botBall.y, '-' + dmg.toLocaleString('de-DE'), BOT_COLOR);
+      if (botBall.r < SOUND_MAX_RADIUS) botHitSound(botBall.r);
     } else {
       botBall.vy = 0;
       if (!gameOver) gameOver = true;
@@ -303,7 +295,7 @@ function drawHealthBar(y0, y1, bg, health) {
   ctx.font = '900 20px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(Math.max(0, Math.round(health)).toLocaleString('en-US'), W / 2, (y0 + y1) / 2);
+  ctx.fillText(Math.max(0, Math.round(health)).toLocaleString('de-DE'), W / 2, (y0 + y1) / 2);
 }
 
 function drawSideBars(bars, arenaY1orig, color) {
@@ -320,14 +312,14 @@ function draw() {
   ctx.fillStyle = '#e9ddc4';
   ctx.fillRect(0, 0, W, H);
 
-  // Top label
+  // Top-Label
   ctx.fillStyle = TOP_COLOR;
-  ctx.font = '900 18px Arial';
+  ctx.font = '900 20px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('1000x SQUARE BALLS', W / 2, LABEL_H / 2);
+  ctx.fillText('SPEED BALL', W / 2, LABEL_H / 2);
 
-  // Top arena
+  // Top-Arena
   const topActiveIdx = getActiveBarIndex(topBars);
   const topFloorY = TOP_ARENA_Y1 + topActiveIdx * BAR_H;
   drawArenaBg(TOP_ARENA_Y0, topFloorY);
@@ -335,17 +327,27 @@ function draw() {
   ctx.beginPath();
   ctx.rect(0, TOP_ARENA_Y0, W, topFloorY - TOP_ARENA_Y0);
   ctx.clip();
-  for (const b of topBalls) {
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+  ctx.beginPath();
+  ctx.arc(topBall.x, topBall.y, topBall.r, 0, Math.PI * 2);
+  ctx.fillStyle = TOP_COLOR;
+  ctx.fill();
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = '#000';
+  ctx.stroke();
+  for (const p of popups) {
+    if (p.color !== TOP_COLOR) continue;
+    ctx.globalAlpha = Math.max(0, 1 - p.age / 40);
     ctx.fillStyle = TOP_COLOR;
-    ctx.fill();
+    ctx.font = 'bold 14px Arial';
+    ctx.fillText(p.text, p.x, p.y - p.age * 0.6);
+    ctx.globalAlpha = 1;
   }
   ctx.restore();
   ctx.textAlign = 'left';
   ctx.font = 'bold 12px Arial';
   ctx.fillStyle = TOP_COLOR;
-  ctx.fillText('DAMAGE: ' + squareDmg(topHitCount + 1).toLocaleString('en-US'), 12, TOP_ARENA_Y0 + 14);
+  const topSpeedLabel = topBall.speedMult >= SPEED_CAP ? 'max' : topBall.speedMult.toFixed(1) + 'x';
+  ctx.fillText('DAMAGE: ' + dmgFormula(topHitCount + 1).toLocaleString('de-DE') + '  |  SPEED: ' + topSpeedLabel, 12, TOP_ARENA_Y0 + 14);
 
   drawSideBars(topBars, TOP_ARENA_Y1, TOP_COLOR);
   drawChecker(TOP_CHECKER_Y0, TOP_CHECKER_Y1);
@@ -357,12 +359,12 @@ function draw() {
   ctx.textBaseline = 'middle';
   ctx.fillText('VS', W / 2, (VS_Y0 + VS_Y1) / 2);
 
-  // Bottom label
+  // Bottom-Label
   ctx.fillStyle = BOT_COLOR;
   ctx.font = '900 20px Arial';
-  ctx.fillText('FACTORIAL BALL', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
+  ctx.fillText('GROW BALL', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
 
-  // Bottom arena
+  // Bottom-Arena
   const botActiveIdx = getActiveBarIndex(botBars);
   const botFloorY = BOT_ARENA_Y1 + botActiveIdx * BAR_H;
   drawArenaBg(BOT_ARENA_Y0, botFloorY);
@@ -381,7 +383,7 @@ function draw() {
     if (p.color !== BOT_COLOR) continue;
     ctx.globalAlpha = Math.max(0, 1 - p.age / 40);
     ctx.fillStyle = BOT_COLOR;
-    ctx.font = 'bold 13px Arial';
+    ctx.font = 'bold 14px Arial';
     ctx.textAlign = 'center';
     ctx.fillText(p.text, p.x, p.y - p.age * 0.6);
     ctx.globalAlpha = 1;
@@ -390,7 +392,7 @@ function draw() {
   ctx.textAlign = 'left';
   ctx.font = 'bold 12px Arial';
   ctx.fillStyle = BOT_COLOR;
-  ctx.fillText('DAMAGE: ' + factorial(botHitCount + 1).toLocaleString('en-US'), 12, BOT_ARENA_Y0 + 14);
+  ctx.fillText('DAMAGE: ' + dmgFormula(botHitCount + 1).toLocaleString('de-DE'), 12, BOT_ARENA_Y0 + 14);
 
   drawSideBars(botBars, BOT_ARENA_Y1, BOT_COLOR);
   drawChecker(BOT_CHECKER_Y0, BOT_CHECKER_Y1);
