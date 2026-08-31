@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Speed Ball vs Grow Ball</title>
+<title>Pulse Ball vs Fibonacci Ball</title>
 <style>
   html, body {
     margin: 0;
@@ -53,8 +53,7 @@ const ctx = canvas.getContext('2d');
 
 const W = 480;
 const LABEL_H = 36;
-const TOP_ARENA_H = 210;
-const BOT_ARENA_H = 350; // größer, damit der wachsende Ball genug Platz hat
+const ARENA_H = 220;
 const BAR_H = 44;
 const CHECKER_H = 14;
 const VS_H = 40;
@@ -62,7 +61,7 @@ const VS_H = 40;
 const TOP_LABEL_Y0 = 0;
 const TOP_LABEL_Y1 = LABEL_H;
 const TOP_ARENA_Y0 = TOP_LABEL_Y1;
-const TOP_ARENA_Y1 = TOP_ARENA_Y0 + TOP_ARENA_H;
+const TOP_ARENA_Y1 = TOP_ARENA_Y0 + ARENA_H;
 const TOP_BAR_Y0 = [TOP_ARENA_Y1, TOP_ARENA_Y1 + BAR_H, TOP_ARENA_Y1 + BAR_H * 2];
 const TOP_BAR_Y1 = TOP_BAR_Y0.map(y => y + BAR_H);
 const TOP_CHECKER_Y0 = TOP_BAR_Y1[2];
@@ -74,7 +73,7 @@ const VS_Y1 = VS_Y0 + VS_H;
 const BOT_LABEL_Y0 = VS_Y1;
 const BOT_LABEL_Y1 = BOT_LABEL_Y0 + LABEL_H;
 const BOT_ARENA_Y0 = BOT_LABEL_Y1;
-const BOT_ARENA_Y1 = BOT_ARENA_Y0 + BOT_ARENA_H;
+const BOT_ARENA_Y1 = BOT_ARENA_Y0 + ARENA_H;
 const BOT_BAR_Y0 = [BOT_ARENA_Y1, BOT_ARENA_Y1 + BAR_H, BOT_ARENA_Y1 + BAR_H * 2];
 const BOT_BAR_Y1 = BOT_BAR_Y0.map(y => y + BAR_H);
 const BOT_CHECKER_Y0 = BOT_BAR_Y1[2];
@@ -97,18 +96,17 @@ resize();
 
 // Balken: Index 0 = direkt unter der Arena, Index 2 = ganz unten
 const BAR_HEALTHS = [1000, 10000000000, 1000000000000000];
-const TOP_COLOR = '#e67e22'; // Speed Ball
-const BOT_COLOR = '#16a085'; // Grow Ball
+const TOP_COLOR = '#d35400'; // Pulse Ball
+const BOT_COLOR = '#2980b9'; // Fibonacci Ball
 const GRAVITY = 0.22;
 const MAX_FALL_SPEED = 30;
-const BOUNCE_VY = 9.79; // gleiche Basis-Sprunghöhe für beide
-const BASE_BALL_SPEED = 3.2;
+const BOUNCE_VY = 9; // gleiche Basis-Sprunghöhe für beide
+const BALL_SPEED = 3.2;
 
-const SPEED_GROWTH = 1.015; // Speed Ball wird pro Treffer 1.5% schneller
-const SPEED_CAP = 50; // Deckelt die Beschleunigung, damit nichts abstürzt
-const GROW_PER_HIT = 2.3; // Grow Ball wächst pro Treffer im Radius
-const START_RADIUS = 10;
-const SOUND_MAX_RADIUS = 100; // ab dieser Größe macht der Grow Ball keinen Sound mehr
+const PULSE_PERIOD_SEC = 4; // Dauer eines vollen Puls-Zyklus
+const PULSE_SLOW_FRAC = 0.87; // 87% des Zyklus ist die langsame Phase
+const PULSE_LOW = 0.22; // Tempo in der langsamen Phase
+const PULSE_HIGH = 1.6; // Spitzen-Tempo im kurzen schnellen "Herzschlag"
 
 let audioCtx = null;
 function ensureAudio() {
@@ -130,13 +128,35 @@ function beep(freq, dur, type, vol) {
   osc.start();
   osc.stop(audioCtx.currentTime + dur);
 }
-function topHitSound(mult) { beep(280 + mult * 8, 0.12, 'square', 0.1); }
-function botHitSound(r) { beep(200 + r * 2, 0.16, 'sine', 0.14); }
+function topHitSound(n) { beep(260 + n * 6, 0.16, 'sine', 0.14); }
+function botHitSound(n) { beep(300 + n * 6, 0.16, 'triangle', 0.14); }
 
-let topBall, botBall, topBars, botBars, topHitCount, botHitCount, popups, gameOver, started;
+let topBall, botBall, topBars, botBars, topHitCount, botHitCount, popups, gameOver, started, startTs;
 
-// Beide Seiten teilen sich dieselbe Formel: startet bei 1, +10% pro Treffer
-function dmgFormula(n) { return Math.round(Math.pow(1.1, n - 1)); }
+function fibonacci(n) {
+  let a = 1, b = 1;
+  if (n <= 2) return 1;
+  for (let i = 3; i <= n; i++) {
+    const c = a + b;
+    a = b;
+    b = c;
+  }
+  return b;
+}
+
+function pulseMult(now) {
+  if (!startTs) return PULSE_LOW;
+  const t = (now - startTs) / 1000;
+  const P = PULSE_PERIOD_SEC;
+  const cyclePos = ((t % P) + P) % P; // 0..P
+  const slowDur = P * PULSE_SLOW_FRAC;
+  if (cyclePos < slowDur) return PULSE_LOW;
+  // kurzer "Herzschlag": schnell hoch und wieder runter
+  const fastT = cyclePos - slowDur;
+  const fastDur = P - slowDur;
+  const frac = fastT / fastDur;
+  return PULSE_LOW + (PULSE_HIGH - PULSE_LOW) * Math.sin(Math.PI * frac);
+}
 
 function applyDamage(bars, dmg) {
   for (let i = 0; i < bars.length; i++) {
@@ -159,19 +179,18 @@ function init() {
   const tAngle = Math.random() * Math.PI * 2;
   topBall = {
     x: W / 2,
-    y: TOP_ARENA_Y0 + TOP_ARENA_H / 2,
-    vx: Math.cos(tAngle) * BASE_BALL_SPEED,
-    vy: Math.sin(tAngle) * BASE_BALL_SPEED,
+    y: TOP_ARENA_Y0 + ARENA_H / 2,
+    vx: Math.cos(tAngle) * BALL_SPEED,
+    vy: Math.sin(tAngle) * BALL_SPEED,
     r: 14,
-    speedMult: 1,
   };
   const bAngle = Math.random() * Math.PI * 2;
   botBall = {
     x: W / 2,
-    y: BOT_ARENA_Y0 + BOT_ARENA_H / 2,
-    vx: Math.cos(bAngle) * BASE_BALL_SPEED,
-    vy: Math.sin(bAngle) * BASE_BALL_SPEED,
-    r: START_RADIUS,
+    y: BOT_ARENA_Y0 + ARENA_H / 2,
+    vx: Math.cos(bAngle) * BALL_SPEED,
+    vy: Math.sin(bAngle) * BALL_SPEED,
+    r: 14,
   };
   topBars = BAR_HEALTHS.slice();
   botBars = BAR_HEALTHS.slice();
@@ -180,6 +199,7 @@ function init() {
   popups = [];
   gameOver = false;
   started = false;
+  startTs = null;
 
   document.getElementById('start-overlay').style.display = 'flex';
 }
@@ -188,6 +208,7 @@ function startGame() {
   if (started) return;
   ensureAudio();
   started = true;
+  startTs = performance.now();
   document.getElementById('start-overlay').style.display = 'none';
 }
 document.getElementById('start-overlay').addEventListener('click', startGame);
@@ -199,13 +220,16 @@ function addPopup(x, y, text, color) {
 
 function update() {
   if (!started || gameOver) return;
+  const now = performance.now();
+  const pm = pulseMult(now);
 
-  // Oben: Speed Ball - wird mit jedem Treffer schneller (Bewegung + Sprunghöhe)
+  // Oben: Pulse Ball - Tempo schwankt rhythmisch zwischen sehr langsam und
+  // sehr schnell (wie ein Herzschlag), inkl. wechselnder Sprunghöhe
   const topFloor = TOP_ARENA_Y1 + getActiveBarIndex(topBars) * BAR_H;
   const tx0 = 12, tx1 = W - 12, ty0 = TOP_ARENA_Y0 + 10, ty1 = topFloor - 10;
-  topBall.vy += GRAVITY;
-  if (topBall.vy > MAX_FALL_SPEED) topBall.vy = MAX_FALL_SPEED;
-  topBall.x += topBall.vx;
+  topBall.vy += GRAVITY * pm;
+  if (topBall.vy > MAX_FALL_SPEED * pm) topBall.vy = MAX_FALL_SPEED * pm;
+  topBall.x += topBall.vx * pm;
   topBall.y += topBall.vy;
   if (topBall.x - topBall.r < tx0) { topBall.x = tx0 + topBall.r; topBall.vx *= -1; }
   if (topBall.x + topBall.r > tx1) { topBall.x = tx1 - topBall.r; topBall.vx *= -1; }
@@ -213,24 +237,19 @@ function update() {
   if (topBall.y + topBall.r > ty1) {
     topBall.y = ty1 - topBall.r;
     if (!isFullyDepleted(topBars)) {
+      topBall.vy = -BOUNCE_VY * pm;
       topHitCount++;
-      if (topBall.speedMult < SPEED_CAP) {
-        topBall.speedMult = Math.min(SPEED_CAP, topBall.speedMult * SPEED_GROWTH);
-      }
-      const dir = topBall.vx >= 0 ? 1 : -1;
-      topBall.vx = dir * BASE_BALL_SPEED * topBall.speedMult;
-      topBall.vy = -BOUNCE_VY * topBall.speedMult;
-      const dmg = dmgFormula(topHitCount);
+      const dmg = fibonacci(topHitCount);
       applyDamage(topBars, dmg);
       addPopup(topBall.x, topBall.y, '-' + dmg.toLocaleString('de-DE'), TOP_COLOR);
-      topHitSound(topBall.speedMult);
+      topHitSound(topHitCount);
     } else {
       topBall.vy = 0;
       if (!gameOver) gameOver = true;
     }
   }
 
-  // Unten: Grow Ball - wird mit jedem Treffer größer, Schaden gleiche Formel
+  // Unten: Fibonacci-Ball - ganz normales, konstantes Verhalten
   const botFloor = BOT_ARENA_Y1 + getActiveBarIndex(botBars) * BAR_H;
   const bx0 = 12, bx1 = W - 12, by0 = BOT_ARENA_Y0 + 10, by1 = botFloor - 10;
   botBall.vy += GRAVITY;
@@ -245,11 +264,10 @@ function update() {
     if (!isFullyDepleted(botBars)) {
       botBall.vy = -BOUNCE_VY;
       botHitCount++;
-      botBall.r += GROW_PER_HIT;
-      const dmg = dmgFormula(botHitCount);
+      const dmg = fibonacci(botHitCount);
       applyDamage(botBars, dmg);
       addPopup(botBall.x, botBall.y, '-' + dmg.toLocaleString('de-DE'), BOT_COLOR);
-      if (botBall.r < SOUND_MAX_RADIUS) botHitSound(botBall.r);
+      botHitSound(botHitCount);
     } else {
       botBall.vy = 0;
       if (!gameOver) gameOver = true;
@@ -317,7 +335,7 @@ function draw() {
   ctx.font = '900 20px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('SPEED BALL', W / 2, LABEL_H / 2);
+  ctx.fillText('PULSE BALL', W / 2, LABEL_H / 2);
 
   // Top-Arena
   const topActiveIdx = getActiveBarIndex(topBars);
@@ -346,8 +364,7 @@ function draw() {
   ctx.textAlign = 'left';
   ctx.font = 'bold 12px Arial';
   ctx.fillStyle = TOP_COLOR;
-  const topSpeedLabel = topBall.speedMult >= SPEED_CAP ? 'max' : topBall.speedMult.toFixed(1) + 'x';
-  ctx.fillText('DAMAGE: ' + dmgFormula(topHitCount + 1).toLocaleString('de-DE') + '  |  SPEED: ' + topSpeedLabel, 12, TOP_ARENA_Y0 + 14);
+  ctx.fillText('DAMAGE: ' + fibonacci(topHitCount + 1).toLocaleString('de-DE'), 12, TOP_ARENA_Y0 + 14);
 
   drawSideBars(topBars, TOP_ARENA_Y1, TOP_COLOR);
   drawChecker(TOP_CHECKER_Y0, TOP_CHECKER_Y1);
@@ -362,7 +379,7 @@ function draw() {
   // Bottom-Label
   ctx.fillStyle = BOT_COLOR;
   ctx.font = '900 20px Arial';
-  ctx.fillText('GROW BALL', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
+  ctx.fillText('FIBONACCI BALL', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
 
   // Bottom-Arena
   const botActiveIdx = getActiveBarIndex(botBars);
@@ -392,7 +409,7 @@ function draw() {
   ctx.textAlign = 'left';
   ctx.font = 'bold 12px Arial';
   ctx.fillStyle = BOT_COLOR;
-  ctx.fillText('DAMAGE: ' + dmgFormula(botHitCount + 1).toLocaleString('de-DE'), 12, BOT_ARENA_Y0 + 14);
+  ctx.fillText('DAMAGE: ' + fibonacci(botHitCount + 1).toLocaleString('de-DE'), 12, BOT_ARENA_Y0 + 14);
 
   drawSideBars(botBars, BOT_ARENA_Y1, BOT_COLOR);
   drawChecker(BOT_CHECKER_Y0, BOT_CHECKER_Y1);
