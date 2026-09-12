@@ -134,7 +134,7 @@ function topHitSound(n) {
   if (!audioCtx || !maleMeowBuffer) return;
   const src = audioCtx.createBufferSource();
   const gain = audioCtx.createGain();
-  gain.gain.value = 0.08;
+  gain.gain.value = 0.15;
   src.buffer = maleMeowBuffer;
   src.connect(gain);
   gain.connect(audioCtx.destination);
