@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Male Ball vs Female Ball</title>
+<title>Boys Ball vs Girls Ball</title>
 <style>
   html, body {
     margin: 0;
@@ -336,7 +336,7 @@ function draw() {
   ctx.font = '900 20px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('MALE BALL ♂', W / 2, LABEL_H / 2);
+  ctx.fillText('BOYS BALL ♂', W / 2, LABEL_H / 2);
 
   const topActiveIdx = getActiveBarIndex(topBars);
   const topFloorY = TOP_ARENA_Y1 + topActiveIdx * BAR_H;
@@ -371,7 +371,7 @@ function draw() {
 
   ctx.fillStyle = BOT_COLOR;
   ctx.font = '900 20px Arial';
-  ctx.fillText('FEMALE BALL ♀', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
+  ctx.fillText('FEBOYS BALL ♀', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
 
   const botActiveIdx = getActiveBarIndex(botBars);
   const botFloorY = BOT_ARENA_Y1 + botActiveIdx * BAR_H;
