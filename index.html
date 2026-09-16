@@ -95,8 +95,8 @@ window.addEventListener('resize', resize);
 resize();
 
 const BAR_HEALTHS = [1000, 10000000000, 1000000000000000];
-const TOP_COLOR = '#E8112D';  // Ronaldo Ball - Rot
-const BOT_COLOR = '#75AADB';  // Messi Ball - Argentinien Hellblau
+const TOP_COLOR = '#D7263D';  // Meat Ball - Rot
+const BOT_COLOR = '#3FA34D';  // Vegan Ball - Grün
 const GRAVITY = 0.22;
 const MAX_FALL_SPEED = 30;
 const BOUNCE_VY = 9;
@@ -162,6 +162,10 @@ function factorial(n) {
   for (let i = 2; i <= n; i++) r *= i;
   return r;
 }
+function doubling(n) {
+  if (n <= 1) return 1;
+  return Math.pow(2, n - 1);
+}
 
 function applyDamage(bars, dmg) {
   for (let i = 0; i < bars.length; i++) {
@@ -186,14 +190,13 @@ function init() {
     vx: Math.cos(tAngle) * BALL_SPEED,
     vy: Math.sin(tAngle) * BALL_SPEED,
     r: 16,
-    slowMult: 0.8,
   };
   const bAngle = Math.random() * Math.PI * 2;
   botBall = {
     x: W / 2,
     y: BOT_ARENA_Y0 + ARENA_H / 2,
-    vx: Math.cos(bAngle) * BALL_SPEED * 1.5,
-    vy: Math.sin(bAngle) * BALL_SPEED * 1.5,
+    vx: Math.cos(bAngle) * BALL_SPEED,
+    vy: Math.sin(bAngle) * BALL_SPEED,
     r: 16,
   };
   topBars = BAR_HEALTHS.slice();
@@ -226,12 +229,14 @@ function addPopup(x, y, text, color) { popups.push({ x, y, text, color, age: 0 }
 function update() {
   if (!started || gameOver) return;
 
-  // Ronaldo (oben): Zeitlupen-Fakultät — springt gleich hoch, wird aber bei jedem Treffer langsamer
+  // Meat Ball (oben): wird sehr schnell und macht 5x Schaden, sobald Vegan Ball den untersten Balken erreicht
   const topFloor = TOP_ARENA_Y1 + getActiveBarIndex(topBars) * BAR_H;
   const tx0 = 12, tx1 = W - 12, ty0 = TOP_ARENA_Y0 + 10, ty1 = topFloor - 10;
-  topBall.vy += GRAVITY * topBall.slowMult;
-  if (topBall.vy > MAX_FALL_SPEED * topBall.slowMult) topBall.vy = MAX_FALL_SPEED * topBall.slowMult;
-  topBall.x += topBall.vx * topBall.slowMult;
+  const meatBoosted = getActiveBarIndex(botBars) >= 2;
+  const meatSpeedMult = meatBoosted ? 2 : 1;
+  topBall.vy += GRAVITY * meatSpeedMult;
+  if (topBall.vy > MAX_FALL_SPEED * meatSpeedMult) topBall.vy = MAX_FALL_SPEED * meatSpeedMult;
+  topBall.x += topBall.vx * meatSpeedMult;
   topBall.y += topBall.vy;
   if (topBall.x - topBall.r < tx0) { topBall.x = tx0 + topBall.r; topBall.vx *= -1; }
   if (topBall.x + topBall.r > tx1) { topBall.x = tx1 - topBall.r; topBall.vx *= -1; }
@@ -240,9 +245,8 @@ function update() {
     topBall.y = ty1 - topBall.r;
     if (!isFullyDepleted(topBars)) {
       topHitCount++;
-      topBall.slowMult = Math.max(MIN_SLOWMO, topBall.slowMult * SLOWDOWN);
-      topBall.vy = -BOUNCE_VY * Math.sqrt(topBall.slowMult);
-      const dmg = factorial(topHitCount);
+      topBall.vy = -BOUNCE_VY * meatSpeedMult;
+      const dmg = fibonacci(topHitCount) * (meatBoosted ? 2 : 1);
       applyDamage(topBars, dmg);
       addPopup(topBall.x, topBall.y, '-' + dmg.toLocaleString('de-DE'), TOP_COLOR);
       if (getActiveBarIndex(topBars) >= 1) topHitSound(topHitCount);
@@ -267,7 +271,7 @@ function update() {
     if (!isFullyDepleted(botBars)) {
       botBall.vy = -BOUNCE_VY;
       botHitCount++;
-      const dmg = fibonacci(botHitCount);
+      const dmg = doubling(botHitCount);
       applyDamage(botBars, dmg);
       addPopup(botBall.x, botBall.y, '-' + dmg.toLocaleString('de-DE'), BOT_COLOR);
       botHitSound(botHitCount);
@@ -354,7 +358,7 @@ function draw() {
   ctx.font = '900 20px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('RONALDO BALL', W / 2, LABEL_H / 2);
+  ctx.fillText('MEAT BALL', W / 2, LABEL_H / 2);
 
   const topActiveIdx = getActiveBarIndex(topBars);
   const topFloorY = TOP_ARENA_Y1 + topActiveIdx * BAR_H;
@@ -363,7 +367,7 @@ function draw() {
   ctx.beginPath();
   ctx.rect(0, TOP_ARENA_Y0, W, topFloorY - TOP_ARENA_Y0);
   ctx.clip();
-  drawSymbolBall(topBall.x, topBall.y, topBall.r, TOP_COLOR, '7');
+  drawSymbolBall(topBall.x, topBall.y, topBall.r, TOP_COLOR, 'M');
   for (const p of popups) {
     if (p.color !== TOP_COLOR) continue;
     ctx.globalAlpha = Math.max(0, 1 - p.age / 40);
@@ -376,7 +380,7 @@ function draw() {
   ctx.textAlign = 'left';
   ctx.font = 'bold 12px Arial';
   ctx.fillStyle = TOP_COLOR;
-  ctx.fillText('DAMAGE: ' + factorial(topHitCount + 1).toLocaleString('de-DE'), 12, TOP_ARENA_Y0 + 14);
+  ctx.fillText('DAMAGE: ' + (fibonacci(topHitCount + 1) * (getActiveBarIndex(botBars) >= 2 ? 2 : 1)).toLocaleString('de-DE'), 12, TOP_ARENA_Y0 + 14);
 
   drawSideBars(topBars, TOP_ARENA_Y1, TOP_COLOR);
   drawChecker(TOP_CHECKER_Y0, TOP_CHECKER_Y1);
@@ -389,7 +393,7 @@ function draw() {
 
   ctx.fillStyle = BOT_COLOR;
   ctx.font = '900 20px Arial';
-  ctx.fillText('MESSI BALL', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
+  ctx.fillText('VEGAN BALL', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
 
   const botActiveIdx = getActiveBarIndex(botBars);
   const botFloorY = BOT_ARENA_Y1 + botActiveIdx * BAR_H;
@@ -398,7 +402,7 @@ function draw() {
   ctx.beginPath();
   ctx.rect(0, BOT_ARENA_Y0, W, botFloorY - BOT_ARENA_Y0);
   ctx.clip();
-  drawSymbolBall(botBall.x, botBall.y, botBall.r, BOT_COLOR, '10');
+  drawSymbolBall(botBall.x, botBall.y, botBall.r, BOT_COLOR, 'V');
   for (const p of popups) {
     if (p.color !== BOT_COLOR) continue;
     ctx.globalAlpha = Math.max(0, 1 - p.age / 40);
@@ -412,7 +416,7 @@ function draw() {
   ctx.textAlign = 'left';
   ctx.font = 'bold 12px Arial';
   ctx.fillStyle = BOT_COLOR;
-  ctx.fillText('DAMAGE: ' + fibonacci(botHitCount + 1).toLocaleString('de-DE'), 12, BOT_ARENA_Y0 + 14);
+  ctx.fillText('DAMAGE: ' + doubling(botHitCount + 1).toLocaleString('de-DE'), 12, BOT_ARENA_Y0 + 14);
 
   drawSideBars(botBars, BOT_ARENA_Y1, BOT_COLOR);
   drawChecker(BOT_CHECKER_Y0, BOT_CHECKER_Y1);
