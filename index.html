@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<title>Male Ball vs Female Ball</title>
+<title>Root Ball vs Log Ball</title>
 <style>
   html, body {
     margin: 0;
@@ -43,7 +43,7 @@
 <div id="wrap">
   <div id="canvas-wrap">
     <canvas id="c"></canvas>
-    <div id="start-overlay">Tap to start<br><span style="font-size:0.6em; opacity:0.85;">(oder K dr\u00fccken)</span></div>
+    <div id="start-overlay">Tap to start<br><span style="font-size:0.6em; opacity:0.85;">(oder K drücken)</span></div>
   </div>
 </div>
 
@@ -94,15 +94,17 @@ function resize() {
 window.addEventListener('resize', resize);
 resize();
 
-const BAR_HEALTHS = [1000, 10000000000, 1000000000000000];
-const TOP_COLOR = '#D7263D';  // Meat Ball - Rot
-const BOT_COLOR = '#3FA34D';  // Vegan Ball - Grün
+// Balken: Index 0 = direkt unter der Arena, Index 2 = ganz unten
+const BAR_HEALTHS = [10, 50, 100];
+const TOP_COLOR = '#2e86de'; // Root Ball (√n, 141 Treffer)
+const BOT_COLOR = '#8e44ad'; // Log Ball (log n, 246 Treffer)
 const GRAVITY = 0.22;
 const MAX_FALL_SPEED = 30;
-const BOUNCE_VY = 9;
-const SLOWDOWN = 0.8;
-const MIN_SLOWMO = 0.01;
-const BALL_SPEED = 3.2;
+// Sprunghöhen: normal (wie sonst auch), keine Spezial-Kalibrierung nötig,
+// da die Balken jetzt klein genug sind
+const TOP_BOUNCE_VY = 9;
+const BOT_BOUNCE_VY = 9;
+const BALL_SPEED = 3;
 
 let audioCtx = null;
 function ensureAudio() {
@@ -124,30 +126,25 @@ function beep(freq, dur, type, vol) {
   osc.start();
   osc.stop(audioCtx.currentTime + dur);
 }
-function topHitSound(n) { beep(300 + n * 6, 0.16, 'triangle', 0.14); }
-function botHitSound(n) { beep(220 + n * 5, 0.16, 'sine', 0.14); }
+let lastTopSound = 0;
+function topHitSound() {
+  const now = performance.now();
+  if (now - lastTopSound < 45) return;
+  lastTopSound = now;
+  beep(340, 0.1, 'sine', 0.12);
+}
+let lastBotSound = 0;
+function botHitSound() {
+  const now = performance.now();
+  if (now - lastBotSound < 45) return;
+  lastBotSound = now;
+  beep(260, 0.1, 'triangle', 0.12);
+}
 
 let topBall, botBall, topBars, botBars, topHitCount, botHitCount, popups, gameOver, started;
 
-function fibonacci(n) {
-  let a = 1, b = 1;
-  if (n <= 2) return 1;
-  for (let i = 3; i <= n; i++) {
-    const c = a + b;
-    a = b;
-    b = c;
-  }
-  return b;
-}
-function factorial(n) {
-  let r = 1;
-  for (let i = 2; i <= n; i++) r *= i;
-  return r;
-}
-function doubling(n) {
-  if (n <= 1) return 1;
-  return Math.pow(2, n - 1);
-}
+function rootDmg(n) { return Math.sqrt(n); }
+function logDmg(n) { return Math.log(n + 1); }
 
 function applyDamage(bars, dmg) {
   for (let i = 0; i < bars.length; i++) {
@@ -171,7 +168,7 @@ function init() {
     y: TOP_ARENA_Y0 + ARENA_H / 2,
     vx: Math.cos(tAngle) * BALL_SPEED,
     vy: Math.sin(tAngle) * BALL_SPEED,
-    r: 16,
+    r: 14,
   };
   const bAngle = Math.random() * Math.PI * 2;
   botBall = {
@@ -179,7 +176,7 @@ function init() {
     y: BOT_ARENA_Y0 + ARENA_H / 2,
     vx: Math.cos(bAngle) * BALL_SPEED,
     vy: Math.sin(bAngle) * BALL_SPEED,
-    r: 16,
+    r: 14,
   };
   topBars = BAR_HEALTHS.slice();
   botBars = BAR_HEALTHS.slice();
@@ -195,7 +192,6 @@ function init() {
 function startGame() {
   if (started) return;
   ensureAudio();
-  // Stumm anspielen, um Autoplay-Sperre früh zu lösen (iOS/Chrome)
   started = true;
   document.getElementById('start-overlay').style.display = 'none';
 }
@@ -207,14 +203,12 @@ function addPopup(x, y, text, color) { popups.push({ x, y, text, color, age: 0 }
 function update() {
   if (!started || gameOver) return;
 
-  // Meat Ball (oben): wird sehr schnell und macht 5x Schaden, sobald Vegan Ball den untersten Balken erreicht
+  // Oben: Root Ball - Schaden nach Wurzelfunktion (√n)
   const topFloor = TOP_ARENA_Y1 + getActiveBarIndex(topBars) * BAR_H;
   const tx0 = 12, tx1 = W - 12, ty0 = TOP_ARENA_Y0 + 10, ty1 = topFloor - 10;
-  const meatBoosted = getActiveBarIndex(botBars) >= 2;
-  const meatSpeedMult = meatBoosted ? 2 : 1;
-  topBall.vy += GRAVITY * meatSpeedMult;
-  if (topBall.vy > MAX_FALL_SPEED * meatSpeedMult) topBall.vy = MAX_FALL_SPEED * meatSpeedMult;
-  topBall.x += topBall.vx * meatSpeedMult;
+  topBall.vy += GRAVITY;
+  if (topBall.vy > MAX_FALL_SPEED) topBall.vy = MAX_FALL_SPEED;
+  topBall.x += topBall.vx;
   topBall.y += topBall.vy;
   if (topBall.x - topBall.r < tx0) { topBall.x = tx0 + topBall.r; topBall.vx *= -1; }
   if (topBall.x + topBall.r > tx1) { topBall.x = tx1 - topBall.r; topBall.vx *= -1; }
@@ -222,19 +216,19 @@ function update() {
   if (topBall.y + topBall.r > ty1) {
     topBall.y = ty1 - topBall.r;
     if (!isFullyDepleted(topBars)) {
+      topBall.vy = -TOP_BOUNCE_VY;
       topHitCount++;
-      topBall.vy = -BOUNCE_VY * meatSpeedMult;
-      const dmg = fibonacci(topHitCount) * (meatBoosted ? 2 : 1);
+      const dmg = rootDmg(topHitCount);
       applyDamage(topBars, dmg);
-      addPopup(topBall.x, topBall.y, '-' + dmg.toLocaleString('de-DE'), TOP_COLOR);
-      if (getActiveBarIndex(topBars) >= 1) topHitSound(topHitCount);
+      addPopup(topBall.x, topBall.y, '-' + dmg.toFixed(1), TOP_COLOR);
+      topHitSound();
     } else {
       topBall.vy = 0;
       if (!gameOver) gameOver = true;
     }
   }
 
-  // Messi (unten): normale Physik, Fibonacci-Schaden
+  // Unten: Log Ball - Schaden nach Logarithmusfunktion (log n)
   const botFloor = BOT_ARENA_Y1 + getActiveBarIndex(botBars) * BAR_H;
   const bx0 = 12, bx1 = W - 12, by0 = BOT_ARENA_Y0 + 10, by1 = botFloor - 10;
   botBall.vy += GRAVITY;
@@ -247,18 +241,15 @@ function update() {
   if (botBall.y + botBall.r > by1) {
     botBall.y = by1 - botBall.r;
     if (!isFullyDepleted(botBars)) {
-      botBall.vy = -BOUNCE_VY;
+      botBall.vy = -BOT_BOUNCE_VY;
       botHitCount++;
-      const dmg = doubling(botHitCount);
+      const dmg = logDmg(botHitCount);
       applyDamage(botBars, dmg);
-      addPopup(botBall.x, botBall.y, '-' + dmg.toLocaleString('de-DE'), BOT_COLOR);
-      botHitSound(botHitCount);
+      addPopup(botBall.x, botBall.y, '-' + dmg.toFixed(1), BOT_COLOR);
+      botHitSound();
     } else {
       botBall.vy = 0;
-      if (!gameOver) {
-        gameOver = true;
-        beep(180, 0.5, 'sawtooth', 0.18);
-      }
+      if (!gameOver) gameOver = true;
     }
   }
 
@@ -284,22 +275,6 @@ function drawArenaBg(y0, y1) {
   ctx.lineWidth = 3;
   ctx.strokeRect(1.5, y0 + 1.5, W - 3, (y1 - y0) - 3);
 }
-
-function drawSymbolBall(x, y, r, color, symbol) {
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fillStyle = color;
-  ctx.fill();
-  ctx.lineWidth = 2;
-  ctx.strokeStyle = '#000';
-  ctx.stroke();
-  ctx.fillStyle = '#fff';
-  ctx.font = '900 ' + Math.round(r * 1.3) + 'px Arial';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(symbol, x, y + 1);
-}
-
 function drawHealthBar(y0, y1, bg, health) {
   if (health <= 0) {
     ctx.fillStyle = '#e9ddc4';
@@ -315,7 +290,7 @@ function drawHealthBar(y0, y1, bg, health) {
   ctx.font = '900 20px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(Math.max(0, Math.round(health)).toLocaleString('de-DE'), W / 2, (y0 + y1) / 2);
+  ctx.fillText(Math.max(0, health).toFixed(1), W / 2, (y0 + y1) / 2);
 }
 function drawSideBars(bars, arenaY1orig, color) {
   const activeIdx = getActiveBarIndex(bars);
@@ -331,11 +306,12 @@ function draw() {
   ctx.fillStyle = '#e9ddc4';
   ctx.fillRect(0, 0, W, H);
 
+  // Top-Label
   ctx.fillStyle = TOP_COLOR;
   ctx.font = '900 20px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('MEAT BALL', W / 2, LABEL_H / 2);
+  ctx.fillText('ROOT BALL', W / 2, LABEL_H / 2);
 
   const topActiveIdx = getActiveBarIndex(topBars);
   const topFloorY = TOP_ARENA_Y1 + topActiveIdx * BAR_H;
@@ -344,7 +320,13 @@ function draw() {
   ctx.beginPath();
   ctx.rect(0, TOP_ARENA_Y0, W, topFloorY - TOP_ARENA_Y0);
   ctx.clip();
-  drawSymbolBall(topBall.x, topBall.y, topBall.r, TOP_COLOR, 'M');
+  ctx.beginPath();
+  ctx.arc(topBall.x, topBall.y, topBall.r, 0, Math.PI * 2);
+  ctx.fillStyle = TOP_COLOR;
+  ctx.fill();
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = '#000';
+  ctx.stroke();
   for (const p of popups) {
     if (p.color !== TOP_COLOR) continue;
     ctx.globalAlpha = Math.max(0, 1 - p.age / 40);
@@ -357,20 +339,22 @@ function draw() {
   ctx.textAlign = 'left';
   ctx.font = 'bold 12px Arial';
   ctx.fillStyle = TOP_COLOR;
-  ctx.fillText('DAMAGE: ' + (fibonacci(topHitCount + 1) * (getActiveBarIndex(botBars) >= 2 ? 2 : 1)).toLocaleString('de-DE'), 12, TOP_ARENA_Y0 + 14);
+  ctx.fillText('DAMAGE: ' + rootDmg(topHitCount + 1).toFixed(2), 12, TOP_ARENA_Y0 + 14);
 
   drawSideBars(topBars, TOP_ARENA_Y1, TOP_COLOR);
   drawChecker(TOP_CHECKER_Y0, TOP_CHECKER_Y1);
 
+  // VS
   ctx.fillStyle = '#111';
   ctx.font = '900 22px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText('VS', W / 2, (VS_Y0 + VS_Y1) / 2);
 
+  // Bottom-Label
   ctx.fillStyle = BOT_COLOR;
   ctx.font = '900 20px Arial';
-  ctx.fillText('VEGAN BALL', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
+  ctx.fillText('LOG BALL', W / 2, (BOT_LABEL_Y0 + BOT_LABEL_Y1) / 2);
 
   const botActiveIdx = getActiveBarIndex(botBars);
   const botFloorY = BOT_ARENA_Y1 + botActiveIdx * BAR_H;
@@ -379,7 +363,13 @@ function draw() {
   ctx.beginPath();
   ctx.rect(0, BOT_ARENA_Y0, W, botFloorY - BOT_ARENA_Y0);
   ctx.clip();
-  drawSymbolBall(botBall.x, botBall.y, botBall.r, BOT_COLOR, 'V');
+  ctx.beginPath();
+  ctx.arc(botBall.x, botBall.y, botBall.r, 0, Math.PI * 2);
+  ctx.fillStyle = BOT_COLOR;
+  ctx.fill();
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = '#000';
+  ctx.stroke();
   for (const p of popups) {
     if (p.color !== BOT_COLOR) continue;
     ctx.globalAlpha = Math.max(0, 1 - p.age / 40);
@@ -393,7 +383,7 @@ function draw() {
   ctx.textAlign = 'left';
   ctx.font = 'bold 12px Arial';
   ctx.fillStyle = BOT_COLOR;
-  ctx.fillText('DAMAGE: ' + doubling(botHitCount + 1).toLocaleString('de-DE'), 12, BOT_ARENA_Y0 + 14);
+  ctx.fillText('DAMAGE: ' + logDmg(botHitCount + 1).toFixed(2), 12, BOT_ARENA_Y0 + 14);
 
   drawSideBars(botBars, BOT_ARENA_Y1, BOT_COLOR);
   drawChecker(BOT_CHECKER_Y0, BOT_CHECKER_Y1);
