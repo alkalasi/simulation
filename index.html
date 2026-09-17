@@ -98,12 +98,14 @@ resize();
 const BAR_HEALTHS = [10, 50, 100];
 const TOP_COLOR = '#2e86de'; // Root Ball (√n, 141 Treffer)
 const BOT_COLOR = '#8e44ad'; // Log Ball (log n, 246 Treffer)
-const GRAVITY = 0.22;
 const MAX_FALL_SPEED = 30;
-// Sprunghöhen: normal (wie sonst auch), keine Spezial-Kalibrierung nötig,
-// da die Balken jetzt klein genug sind
-const TOP_BOUNCE_VY = 9;
-const BOT_BOUNCE_VY = 9;
+// Jede Seite hat eine eigene, schwächere Gravitation, damit die Sprünge
+// trotz längerer Sprungzeit (~100s Gesamtdauer) in die Arena passen:
+// Root: 39 Treffer * ~1.79s Periode ≈ 70s | Log: 53 Treffer * ~1.89s Periode ≈ 100s
+const TOP_GRAVITY = 0.1173;
+const BOT_GRAVITY = 0.1061;
+const TOP_BOUNCE_VY = 6.31;
+const BOT_BOUNCE_VY = 6.01;
 const BALL_SPEED = 3;
 
 let audioCtx = null;
@@ -206,7 +208,7 @@ function update() {
   // Oben: Root Ball - Schaden nach Wurzelfunktion (√n)
   const topFloor = TOP_ARENA_Y1 + getActiveBarIndex(topBars) * BAR_H;
   const tx0 = 12, tx1 = W - 12, ty0 = TOP_ARENA_Y0 + 10, ty1 = topFloor - 10;
-  topBall.vy += GRAVITY;
+  topBall.vy += TOP_GRAVITY;
   if (topBall.vy > MAX_FALL_SPEED) topBall.vy = MAX_FALL_SPEED;
   topBall.x += topBall.vx;
   topBall.y += topBall.vy;
@@ -231,7 +233,7 @@ function update() {
   // Unten: Log Ball - Schaden nach Logarithmusfunktion (log n)
   const botFloor = BOT_ARENA_Y1 + getActiveBarIndex(botBars) * BAR_H;
   const bx0 = 12, bx1 = W - 12, by0 = BOT_ARENA_Y0 + 10, by1 = botFloor - 10;
-  botBall.vy += GRAVITY;
+  botBall.vy += BOT_GRAVITY;
   if (botBall.vy > MAX_FALL_SPEED) botBall.vy = MAX_FALL_SPEED;
   botBall.x += botBall.vx;
   botBall.y += botBall.vy;
