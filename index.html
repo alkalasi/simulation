@@ -1312,6 +1312,7 @@ document.querySelectorAll('#gameModeTabs .mode-tab').forEach(tab => {
     document.getElementById('panel-ffa').style.display = currentMode==='ffa' ? 'block' : 'none';
     document.getElementById('panel-boss').style.display = currentMode==='boss' ? 'block' : 'none';
     document.getElementById('hud').style.display = currentMode==='duel' ? 'none' : 'flex';
+    setCanvasResolution(activeRenderScale);
     resizeCanvas();
     resetGame();
   });
