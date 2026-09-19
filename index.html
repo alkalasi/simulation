@@ -3,11 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ClashArena — Battle Builder</title>
+<title>ClashArena — Build Viral Ball Battles</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 <style>
   :root{
     --bg:#0E0F13;
@@ -16,99 +14,71 @@
     --line:#2A2E3A;
     --text:#F3F4F7;
     --muted:#8B90A2;
+    --a:#FF3B5C;      /* fighter red */
+    --a-dim:#4a1420;
+    --b:#22D3EE;      /* fighter cyan */
+    --b-dim:#0e3038;
     --gold:#FFC94A;
   }
   *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
   body{
-    margin:0;background:var(--bg);color:var(--text);
-    font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
   }
-  h1,h2,.display{font-family:'Bebas Neue',sans-serif;letter-spacing:0.5px;font-weight:400;margin:0;}
-  a{color:inherit;}
+  h1,h2,h3,.display{
+    font-family:'Bebas Neue',sans-serif;
+    letter-spacing:0.5px;
+    font-weight:400;
+    line-height:1.02;
+    margin:0;
+  }
+  p{margin:0;}
+  a{color:inherit;text-decoration:none;}
+  .wrap{max-width:1160px;margin:0 auto;padding-left:24px;padding-right:24px;}
+  img,svg{display:block;max-width:100%;}
 
+  /* ---------- NAV ---------- */
   nav{
-    border-bottom:1px solid var(--line);padding:14px 24px;
+    position:sticky;top:0;z-index:50;
+    background:rgba(14,15,19,0.85);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav-inner{
+    max-width:1160px;margin:0 auto;padding:16px 24px;
     display:flex;align-items:center;justify-content:space-between;
   }
-  .logo{display:flex;align-items:center;gap:10px;font-family:'Bebas Neue',sans-serif;font-size:20px;}
-  .logo .dot-a{width:9px;height:9px;border-radius:50%;background:#FF3B5C;}
-  .logo .dot-b{width:9px;height:9px;border-radius:50%;background:#22D3EE;margin-left:-4px;}
-  .back-link{font-size:13.5px;color:var(--muted);}
-  .back-link:hover{color:var(--text);}
-
-  .layout{
-    max-width:1200px;margin:0 auto;padding:28px 20px 60px;
-    display:grid;grid-template-columns:400px 1fr;gap:26px;align-items:start;
+  .logo{display:flex;align-items:center;gap:10px;font-family:'Bebas Neue',sans-serif;font-size:22px;}
+  .logo .dot-a{width:10px;height:10px;border-radius:50%;background:var(--a);}
+  .logo .dot-b{width:10px;height:10px;border-radius:50%;background:var(--b);margin-left:-4px;}
+  .nav-links{display:flex;gap:28px;font-size:14px;color:var(--muted);}
+  .nav-links a:hover{color:var(--text);}
+  .nav-cta{
+    background:var(--text);color:var(--bg);
+    padding:9px 18px;border-radius:6px;font-size:14px;font-weight:600;
+    border:none;cursor:pointer;font-family:'Inter',sans-serif;
   }
-  @media(max-width:900px){.layout{grid-template-columns:1fr;}}
-
-  /* ---------- CONTROLS ---------- */
-  .panel{
-    background:var(--bg-raised);border:1px solid var(--line);
-    border-radius:14px;padding:20px;
+  .nav-auth{display:flex;align-items:center;gap:12px;}
+  .nav-login{
+    background:none;border:none;color:var(--muted);font-size:14px;font-weight:600;
+    cursor:pointer;font-family:'Inter',sans-serif;
   }
-  .panel h2{font-size:22px;margin-bottom:4px;}
-  .panel .sub{color:var(--muted);font-size:13px;margin-bottom:18px;}
-  .fighter-block{border-top:1px solid var(--line);padding-top:16px;margin-top:16px;}
-  .fighter-block:first-of-type{border-top:none;padding-top:0;margin-top:0;}
-  .fighter-title{
-    display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;margin-bottom:12px;
+  .nav-login:hover{color:var(--text);}
+  .nav-account{display:none;position:relative;}
+  .nav-account-btn{
+    display:flex;align-items:center;gap:10px;font-size:14px;
+    background:none;border:none;cursor:pointer;color:var(--text);font-family:'Inter',sans-serif;padding:0;
   }
-  .swatch{width:12px;height:12px;border-radius:50%;}
-  .field{margin-bottom:12px;}
-  .field label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-bottom:5px;}
-  .field label span.val{color:var(--text);font-weight:600;}
-  .field input[type="text"],
-  .field input[type="email"],
-  .field input[type="password"],
-  .field input[type="number"],
-  .field select{
-    width:100%;padding:9px 10px;border-radius:7px;border:1px solid var(--line);
-    background:var(--bg);color:var(--text);font-size:13.5px;font-family:'Inter',sans-serif;
-  }
-  .field input:focus{outline:2px solid #22D3EE;outline-offset:1px;border-color:transparent;}
-
-  /* ---------- AUTH GATE ---------- */
-  .gate-overlay{
-    position:fixed;inset:0;z-index:200;background:var(--bg);
-    display:flex;align-items:center;justify-content:center;padding:20px;
-  }
-  .gate-card{
-    width:100%;max-width:380px;background:var(--bg-raised);border:1px solid var(--line);
-    border-radius:16px;padding:32px;
-  }
-  .gate-sub{color:var(--muted);font-size:13.5px;text-align:center;margin:0 0 22px;}
-  .modal-tabs{display:flex;gap:4px;background:var(--bg-raised-2);border-radius:8px;padding:4px;margin-bottom:20px;}
-  .modal-tab{
-    flex:1;text-align:center;padding:9px 0;border-radius:6px;font-size:14px;font-weight:600;
-    color:var(--muted);cursor:pointer;background:none;border:none;font-family:'Inter',sans-serif;
-  }
-  .modal-tab.active{background:var(--bg-raised);color:var(--text);}
-  .form-pane{display:none;}
-  .form-pane.active{display:block;}
-  .modal-submit{
-    width:100%;background:linear-gradient(90deg,#FF3B5C,#ff6b7f);color:#fff;
-    border:none;padding:12px 0;border-radius:8px;font-weight:700;font-size:15px;
-    cursor:pointer;margin-top:6px;font-family:'Inter',sans-serif;
-  }
-  .modal-error{color:#FF3B5C;font-size:13px;margin-top:10px;display:none;}
-
-  .trial-status{
-    font-size:13px;color:var(--muted);background:var(--bg-raised-2);
-    border:1px solid var(--line);border-radius:20px;padding:6px 14px;
-    display:flex;align-items:center;gap:10px;
-  }
-  .trial-status a{color:var(--gold);font-weight:700;text-decoration:none;}
-  .trial-status.limit-reached{color:#FF3B5C;border-color:#4a1420;}
-  .mode-tabs{display:flex;gap:4px;background:var(--bg-raised-2);border-radius:8px;padding:4px;margin-left:16px;}
-  .mode-tab{padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;background:none;border:none;font-family:'Inter',sans-serif;}
-  .mode-tab.active{background:var(--bg-raised);color:var(--text);}
-  .nav-right{display:flex;align-items:center;gap:12px;}
-  .account-menu-wrap{position:relative;}
-  .account-btn{
-    background:var(--bg-raised-2);color:var(--text);border:1px solid var(--line);
-    border-radius:20px;padding:6px 14px;font-size:13px;font-family:'Inter',sans-serif;
-    cursor:pointer;
+  .nav-account-btn .avatar{
+    width:30px;height:30px;border-radius:50%;
+    background:linear-gradient(135deg,var(--a),var(--b));
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:13px;color:#0E0F13;
   }
   .account-dropdown{
     display:none;position:absolute;top:calc(100% + 8px);right:0;
@@ -122,1420 +92,563 @@
   }
   .account-dropdown button:hover{background:var(--bg-raised-2);}
   .account-dropdown button + button{border-top:1px solid var(--line);}
-  .field input[type="range"]{width:100%;accent-color:var(--gold);}
-  .field input[type="file"]{
-    width:100%;padding:8px 0;font-size:12.5px;color:var(--muted);font-family:'Inter',sans-serif;
+  @media(max-width:720px){.nav-links{display:none;}}
+
+  /* ---------- AUTH MODAL ---------- */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(8,9,12,0.72);
+    display:none;align-items:center;justify-content:center;
+    z-index:100;padding:20px;
   }
-  .field input[type="file"]::file-selector-button{
-    background:var(--bg-raised-2);color:var(--text);border:1px solid var(--line);
-    border-radius:6px;padding:7px 12px;font-size:12.5px;font-weight:600;margin-right:10px;
-    cursor:pointer;font-family:'Inter',sans-serif;
+  .modal-overlay.open{display:flex;}
+  .modal-card{
+    background:var(--bg-raised);border:1px solid var(--line);
+    border-radius:16px;padding:32px;width:100%;max-width:380px;
+    position:relative;
   }
-  .sound-status{font-size:12px;color:var(--muted);margin-top:5px;}
-  .sound-status.error{color:#FF3B5C;}
-  .fighter-row{background:var(--bg-raised-2);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;}
-  .fighter-row-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-  .fighter-row-head input[type="color"]{width:26px;height:26px;border-radius:6px;border:1px solid var(--line);background:none;padding:0;cursor:pointer;}
-  .fighter-row-head input[type="text"]{flex:1;padding:7px 9px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:13px;font-family:'Inter',sans-serif;}
-  .fighter-row-head button{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:2px 6px;}
-  .fighter-row-head button:hover{color:#FF3B5C;}
-  .row-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-  .row-fields .field label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;}
-  .row-fields .field input[type="number"],.row-fields .field select{
-    width:100%;padding:7px 8px;border-radius:6px;border:1px solid var(--line);
-    background:var(--bg);color:var(--text);font-size:12.5px;font-family:'Inter',sans-serif;
+  .modal-close{
+    position:absolute;top:16px;right:16px;background:none;border:none;
+    color:var(--muted);font-size:20px;cursor:pointer;line-height:1;
   }
-  .field-full{grid-column:1 / -1;}
-  .add-btn{
-    width:100%;padding:10px 0;border-radius:8px;border:1px dashed var(--line);
-    background:none;color:var(--muted);font-size:13px;cursor:pointer;margin-top:4px;font-family:'Inter',sans-serif;
+  .modal-close:hover{color:var(--text);}
+  .modal-tabs{display:flex;gap:4px;background:var(--bg-raised-2);border-radius:8px;padding:4px;margin-bottom:22px;}
+  .modal-tab{
+    flex:1;text-align:center;padding:9px 0;border-radius:6px;font-size:14px;font-weight:600;
+    color:var(--muted);cursor:pointer;background:none;border:none;font-family:'Inter',sans-serif;
   }
-  .add-btn:hover{border-color:var(--muted);color:var(--text);}
-  .swarm-count{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
-  .swarm-count input[type="range"]{flex:1;accent-color:var(--gold);}
-  .hud{width:100%;display:flex;flex-direction:column;gap:6px;}
-  .hud-row{display:flex;align-items:center;gap:8px;font-size:12px;}
-  .hud-name{width:80px;color:#3a3428;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .hud-track{flex:1;height:8px;border-radius:5px;background:rgba(0,0,0,0.15);overflow:hidden;}
-  .hud-fill{height:100%;border-radius:5px;transition:width .15s;}
-  .hud-row.dead .hud-name,.hud-row.dead .hud-track{opacity:0.35;}
-  .sound-status .clear-sound{color:var(--gold);cursor:pointer;text-decoration:underline;margin-left:6px;background:none;border:none;font-size:12px;font-family:'Inter',sans-serif;}
-  .mute-row{
-    display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);
-    margin-top:10px;cursor:pointer;
+  .modal-tab.active{background:var(--bg-raised);color:var(--text);}
+  .modal-card h2{font-size:26px;margin-bottom:6px;}
+  .modal-sub{color:var(--muted);font-size:13.5px;margin-bottom:22px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;}
+  .field input{
+    width:100%;padding:11px 12px;border-radius:8px;border:1px solid var(--line);
+    background:var(--bg);color:var(--text);font-size:14px;font-family:'Inter',sans-serif;
   }
-  .mute-row input[type="checkbox"]{accent-color:var(--gold);width:15px;height:15px;cursor:pointer;}
-  .field input[type="color"]{
-    width:100%;height:36px;border-radius:7px;border:1px solid var(--line);
-    background:var(--bg);padding:3px;cursor:pointer;
+  .field input:focus{outline:2px solid var(--b);outline-offset:1px;border-color:transparent;}
+  .modal-submit{
+    width:100%;background:linear-gradient(90deg,var(--a),#ff6b7f);color:#fff;
+    border:none;padding:12px 0;border-radius:8px;font-weight:700;font-size:15px;
+    cursor:pointer;margin-top:6px;
   }
-  .row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-  .row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
-  .row-3 input[type="number"]{
-    width:100%;padding:9px 6px;border-radius:7px;border:1px solid var(--line);
-    background:var(--bg);color:var(--text);font-size:12.5px;text-align:center;font-family:'Inter',sans-serif;
-    -moz-appearance:textfield;
+  .modal-error{color:var(--a);font-size:13px;margin-top:10px;display:none;}
+  .contact-form{max-width:640px;}
+  .contact-form .row-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:600px){.contact-form .row-2{grid-template-columns:1fr;}}
+  .field textarea{
+    width:100%;padding:11px 12px;border-radius:8px;border:1px solid var(--line);
+    background:var(--bg-raised);color:var(--text);font-size:14px;font-family:'Inter',sans-serif;
+    resize:vertical;
   }
-  .row-3 input[type="number"]::-webkit-outer-spin-button,
-  .row-3 input[type="number"]::-webkit-inner-spin-button{
-    -webkit-appearance:none;margin:0;
+  .field textarea:focus{outline:2px solid var(--b);outline-offset:1px;border-color:transparent;}
+  .contact-success{color:#4ADE80;font-size:13px;margin-top:10px;display:none;}
+  #contactSubmitBtn{width:auto;padding:0 28px;}
+  .modal-success{
+    display:none;text-align:center;padding:10px 0 4px;
+  }
+  .modal-success .icon{font-size:38px;margin-bottom:10px;}
+  .modal-success h2{margin-bottom:8px;}
+  .modal-success p{color:var(--muted);font-size:14px;}
+  .form-pane{display:none;}
+  .form-pane.active{display:block;}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    padding:72px 0 60px;
+    display:grid;grid-template-columns:1.1fr 1fr;gap:48px;align-items:center;
+  }
+  @media(max-width:900px){.hero{grid-template-columns:1fr;padding:44px 0 40px;}}
+  .eyebrow-plain{color:var(--muted);font-size:14px;margin-bottom:14px;}
+  .hero h1{font-size:clamp(42px,6vw,72px);}
+  .hero h1 span.vs{
+    display:inline-block;color:var(--gold);
+  }
+  .hero p.sub{
+    color:var(--muted);font-size:18px;max-width:46ch;margin-top:18px;
+  }
+  .hero-ctas{display:flex;gap:14px;margin-top:30px;flex-wrap:wrap;}
+  .btn-primary{
+    background:linear-gradient(90deg,var(--a),#ff6b7f);
+    color:#fff;height:52px;padding:0 26px;line-height:52px;border-radius:8px;font-weight:700;font-size:15px;
+    border:none;cursor:pointer;box-sizing:border-box;
+  }
+  .btn-ghost{
+    border:1px solid var(--line);padding:14px 26px;border-radius:8px;
+    font-weight:600;font-size:15px;color:var(--text);
+  }
+  .btn-ghost:hover{border-color:var(--muted);}
+  .btn-light{
+    background:var(--text);color:var(--bg);border:none;
+    height:52px;padding:0 26px;line-height:52px;border-radius:8px;font-weight:700;font-size:15px;
+    cursor:pointer;font-family:'Inter',sans-serif;box-sizing:border-box;
+  }
+  .btn-light:hover{opacity:0.9;}
+  .pricing-cta{
+    display:flex !important;align-items:center !important;justify-content:center !important;
+    width:100% !important;height:52px !important;min-height:52px !important;max-height:52px !important;
+    box-sizing:border-box !important;padding:0 !important;margin:0 !important;line-height:normal !important;
   }
 
-  .panel-actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
-  .btn{
-    flex:1;padding:11px 0;border-radius:8px;font-weight:700;font-size:14px;
-    border:none;cursor:pointer;font-family:'Inter',sans-serif;text-align:center;
+  /* Arena mockup */
+  .arena-card{
+    background:var(--bg-raised);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:22px;
   }
-  .btn-primary{background:linear-gradient(90deg,#FF3B5C,#ff6b7f);color:#fff;}
-  .btn-ghost{background:var(--bg-raised-2);color:var(--text);border:1px solid var(--line);}
-  .btn-record{background:var(--bg-raised-2);color:var(--text);border:1px solid var(--line);width:100%;margin-top:10px;}
-  .btn-record.recording{background:#4a1420;border-color:#FF3B5C;color:#FF3B5C;}
-  .btn:disabled{opacity:0.5;cursor:not-allowed;}
+  .arena-ring{
+    position:relative;
+    aspect-ratio:1/1;
+    border-radius:50%;
+    border:2px dashed var(--line);
+    display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 50% 50%, #14161d 0%, #0c0d11 75%);
+  }
+  .ball{
+    width:20%;height:20%;border-radius:50%;position:absolute;
+    box-shadow:0 0 22px currentColor;
+  }
+  .ball-a{background:var(--a);color:var(--a);top:26%;left:20%;}
+  .ball-b{background:var(--b);color:var(--b);bottom:26%;right:20%;}
+  .vs-mark{
+    font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--gold);
+  }
+  .hp-panel{margin-top:16px;display:flex;flex-direction:column;gap:10px;}
+  .hp-row{display:flex;align-items:center;gap:10px;font-size:13px;}
+  .hp-name{width:64px;color:var(--muted);}
+  .hp-track{flex:1;height:8px;border-radius:5px;background:var(--bg-raised-2);overflow:hidden;}
+  .hp-fill{height:100%;border-radius:5px;}
+  .hp-fill.a{width:64%;background:var(--a);}
+  .hp-fill.b{width:41%;background:var(--b);}
+  .hp-num{width:34px;text-align:right;color:var(--muted);}
 
-  /* ---------- CANVAS SIDE ---------- */
-  .canvas-panel{
-    background:#e9ddc4;border:1px solid var(--line);border-radius:14px;
-    padding:20px;display:flex;flex-direction:column;align-items:center;gap:14px;
+  /* ---------- SECTION HEADERS ---------- */
+  section{padding:70px 0;}
+  .section-head{max-width:640px;margin-bottom:40px;}
+  .section-head h2{font-size:clamp(32px,4vw,46px);}
+  .section-head p{color:var(--muted);margin-top:12px;font-size:16px;}
+
+  /* ---------- MODES GRID ---------- */
+  .modes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+  @media(max-width:900px){.modes-grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:600px){.modes-grid{grid-template-columns:1fr;}}
+  .mode-card{background:var(--bg-raised);padding:26px;}
+  .mode-card h3{font-size:22px;margin-bottom:8px;}
+  .mode-card p{color:var(--muted);font-size:14.5px;}
+  .mode-tag{
+    display:inline-block;font-size:11.5px;color:var(--gold);
+    border:1px solid #453a20;background:#241d10;
+    padding:3px 9px;border-radius:20px;margin-bottom:12px;
   }
-  #canvas-wrap{position:relative;width:100%;display:flex;justify-content:center;background:#e9ddc4;}
-  canvas{display:block;border-radius:8px;max-width:100%;height:auto;}
-  #start-overlay{
-    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-    background:rgba(8,9,12,0.6);color:#fff;font-size:16px;font-weight:700;
-    border-radius:8px;cursor:pointer;text-align:center;user-select:none;
+  .coming-soon{
+    display:inline-block;font-size:11px;color:var(--muted);
+    border:1px solid var(--line);background:var(--bg-raised-2);
+    padding:3px 9px;border-radius:20px;margin-bottom:12px;margin-left:6px;
   }
-  .status-line{color:var(--muted);font-size:13.5px;text-align:center;}
-  .rec-note{color:var(--muted);font-size:12px;text-align:center;max-width:44ch;}
+
+  /* ---------- HOW IT WORKS ---------- */
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:28px;}
+  @media(max-width:900px){.steps{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:560px){.steps{grid-template-columns:1fr;}}
+  .step{border-top:2px solid var(--line);padding-top:16px;}
+  .step .num{font-family:'Bebas Neue',sans-serif;font-size:34px;color:var(--muted);}
+  .step h3{font-size:19px;margin:8px 0 8px;}
+  .step p{color:var(--muted);font-size:14.5px;}
+
+  /* ---------- FEATURES ---------- */
+  .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;}
+  @media(max-width:900px){.feat-grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:600px){.feat-grid{grid-template-columns:1fr;}}
+  .feat{background:var(--bg-raised);border:1px solid var(--line);border-radius:12px;padding:22px;}
+  .feat .icon{font-size:22px;margin-bottom:10px;}
+  .feat h3{font-family:'Inter',sans-serif;font-weight:700;font-size:16px;margin-bottom:6px;}
+  .feat p{color:var(--muted);font-size:14px;}
+
+  /* ---------- PRICING ---------- */
+  .price-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+  @media(max-width:760px){.price-grid{grid-template-columns:1fr;}}
+  .price-card{background:var(--bg-raised);border:1px solid var(--line);border-radius:16px;padding:32px;}
+  .price-card.pro{border-color:var(--a);background:linear-gradient(180deg,#1c1418,var(--bg-raised) 40%);}
+  .price-card h3{font-family:'Inter',sans-serif;font-weight:700;font-size:18px;color:var(--muted);}
+  .price-card.pro h3{color:var(--a);}
+  .price-amount{font-family:'Bebas Neue',sans-serif;font-size:52px;margin:10px 0 4px;}
+  .price-amount span{font-family:'Inter',sans-serif;font-size:15px;color:var(--muted);font-weight:500;}
+  .price-list{list-style:none;padding:0;margin:22px 0 26px;display:flex;flex-direction:column;gap:10px;font-size:14.5px;color:var(--text);}
+  .price-list li{display:flex;gap:10px;}
+  .price-list li::before{content:"✓";color:var(--gold);}
+
+  /* ---------- FAQ ---------- */
+  .faq-item{border-bottom:1px solid var(--line);}
+  .faq-q{
+    width:100%;text-align:left;background:none;border:none;color:var(--text);
+    padding:20px 0;font-size:16.5px;font-weight:600;cursor:pointer;
+    display:flex;justify-content:space-between;align-items:center;font-family:'Inter',sans-serif;
+  }
+  .faq-q .plus{color:var(--muted);font-size:20px;transition:transform .2s ease;}
+  .faq-item.open .faq-q .plus{transform:rotate(45deg);}
+  .faq-a{max-height:0;overflow:hidden;color:var(--muted);font-size:14.5px;transition:max-height .25s ease;}
+  .faq-item.open .faq-a{max-height:200px;padding-bottom:20px;}
+
+  /* ---------- FOOTER ---------- */
+  footer{border-top:1px solid var(--line);padding:36px 0;color:var(--muted);font-size:13.5px;}
+  .footer-inner{display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;}
+  .footer-links{display:flex;gap:20px;flex-wrap:wrap;}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
 <nav>
-  <div class="logo"><span class="dot-a"></span><span class="dot-b"></span>&nbsp;ClashArena</div>
-  <div class="mode-tabs" id="gameModeTabs">
-    <button class="mode-tab active" data-mode="duel">Duel</button>
-    <button class="mode-tab" data-mode="ffa">Free-for-all</button>
-    <button class="mode-tab" data-mode="boss">Boss Fight</button>
-  </div>
-  <div class="nav-right">
-    <div class="trial-status" id="trialStatus" style="display:none;"></div>
-    <div class="account-menu-wrap" id="accountMenuWrap" style="display:none;">
-      <button class="account-btn" id="accountBtn">Account ▾</button>
-      <div class="account-dropdown" id="accountDropdown">
-        <button id="manageSubBtn" style="display:none;">Manage subscription</button>
-        <button id="upgradeBtn" style="display:none;">Upgrade to Pro</button>
-        <button id="logoutBtn">Log out</button>
+  <div class="nav-inner">
+    <div class="logo"><span class="dot-a"></span><span class="dot-b"></span>&nbsp;ClashArena</div>
+    <div class="nav-links">
+      <a href="#modes">Modes</a>
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <div class="nav-auth">
+      <button class="nav-login" id="openLogin">Log In</button>
+      <button class="nav-cta" id="openSignup">Sign Up</button>
+      <div class="nav-account" id="navAccount">
+        <button class="nav-account-btn" id="navAccountBtn">
+          <span class="avatar" id="navAvatar">A</span>
+          <span id="navName">Anas</span>
+        </button>
+        <div class="account-dropdown" id="navAccountDropdown">
+          <button id="manageSubBtn" style="display:none;">Manage subscription</button>
+          <button id="logoutBtn">Log out</button>
+        </div>
       </div>
     </div>
   </div>
-  <a class="back-link" href="index.html">← Back to site</a>
 </nav>
 
-<!-- AUTH GATE: blocks the whole builder until the person signs up or logs in -->
-<div class="gate-overlay" id="gateOverlay">
-  <div class="gate-card">
-    <div class="logo" style="justify-content:center;margin-bottom:6px;"><span class="dot-a"></span><span class="dot-b"></span>&nbsp;ClashArena</div>
-    <p class="gate-sub">Sign up to start building battles. Free trial: 3 days, up to 7 clips.</p>
-
-    <div class="modal-tabs">
-      <button class="modal-tab active" data-pane="gate-signup">Sign Up</button>
-      <button class="modal-tab" data-pane="gate-login">Log In</button>
-    </div>
-
-    <div class="form-pane active" id="pane-gate-signup">
-      <form id="gateSignupForm">
-        <div class="field">
-          <label for="gsu-name">Name</label>
-          <input type="text" id="gsu-name" required autocomplete="name">
-        </div>
-        <div class="field">
-          <label for="gsu-email">Email</label>
-          <input type="email" id="gsu-email" required autocomplete="email">
-        </div>
-        <div class="field">
-          <label for="gsu-password">Password</label>
-          <input type="password" id="gsu-password" required minlength="8" autocomplete="new-password">
-        </div>
-        <button type="submit" class="modal-submit">Start Free Trial</button>
-        <p class="modal-error" id="gsu-error">Please fill in every field (password: 8+ characters).</p>
-      </form>
-    </div>
-
-    <div class="form-pane" id="pane-gate-login">
-      <form id="gateLoginForm">
-        <div class="field">
-          <label for="gli-email">Email</label>
-          <input type="email" id="gli-email" required autocomplete="email">
-        </div>
-        <div class="field">
-          <label for="gli-password">Password</label>
-          <input type="password" id="gli-password" required autocomplete="current-password">
-        </div>
-        <button type="submit" class="modal-submit">Log In</button>
-        <p class="modal-error" id="gli-error">Please enter your email and password.</p>
-      </form>
+<header class="wrap hero">
+  <div>
+    <div class="eyebrow-plain">Browser-based ball battle builder</div>
+    <h1>Two balls enter.<br>Only one health bar<br>survives<span class="vs">.</span></h1>
+    <p class="sub">Name your fighters, set their colors and damage, and watch a live health-bar duel play out — built for TikTok, Reels, and Shorts. No editing software, no download required.</p>
+    <div class="hero-ctas">
+      <button class="btn-primary open-signup-trigger">Start a Battle</button>
+      <a href="#modes" class="btn-ghost">See Battle Modes</a>
     </div>
   </div>
-</div>
-
-<div class="layout" id="mainLayout" style="display:none;">
-
-  <!-- CONTROLS: DUEL -->
-  <div class="panel" id="panel-duel">
-    <h2>Battle Builder</h2>
-    <p class="sub">Set up both fighters, then start the battle.</p>
-
-    <div class="fighter-block">
-      <div class="fighter-title"><span class="swatch" id="swatchA"></span>Fighter 1</div>
-      <div class="field">
-        <label for="nameA">Name</label>
-        <input type="text" id="nameA" maxlength="14" value="BLAZE">
-      </div>
-      <div class="field">
-        <label for="colorA">Color</label>
-        <input type="color" id="colorA" value="#ff3b5c">
-      </div>
-      <div class="field">
-        <label>HP per bar <span class="val" id="hpATotal">3,000 total</span></label>
-        <div class="row-3">
-          <input type="number" id="hpA1" min="1" value="1000" title="Bar 1 HP">
-          <input type="number" id="hpA2" min="1" value="1000" title="Bar 2 HP">
-          <input type="number" id="hpA3" min="1" value="1000" title="Bar 3 HP">
-        </div>
-      </div>
-      <div class="row-2">
-        <div class="field">
-          <label for="dmgA">Base damage <span class="val" id="dmgAVal">10</span></label>
-          <input type="range" id="dmgA" min="1" max="100" step="1" value="10">
-        </div>
-        <div class="field">
-          <label for="speedA">Speed <span class="val" id="speedAVal">1.0×</span></label>
-          <input type="range" id="speedA" min="0.4" max="3" step="0.1" value="1">
-        </div>
-      </div>
-      <div class="field">
-        <label for="growthA">Damage growth</label>
-        <select id="growthA">
-          <optgroup label="Sequences">
-            <option value="fibonacci">Fibonacci (1, 1, 2, 3, 5, 8, 13, 21, ...)</option>
-            <option value="factorial">Factorial (1, 2, 6, 24, 120, 720, ...)</option>
-            <option value="squares">Squares (1, 4, 9, 16, 25, 36, ...)</option>
-            <option value="catalan">Catalan numbers (1, 1, 2, 5, 14, 42, ...)</option>
-            <option value="lucas">Lucas numbers (2, 1, 3, 4, 7, 11, ...)</option>
-            <option value="tribonacci">Tribonacci (1, 1, 2, 4, 7, 13, 24, ...)</option>
-          </optgroup>
-          <optgroup label="Multiplicative">
-            <option value="double" selected>Doubling (×2 per hit)</option>
-            <option value="triple">Tripling (×3 per hit)</option>
-            <option value="base18">×1.8 per hit</option>
-            <option value="plus20pct">+20% per hit</option>
-            <option value="plus10pct">+10% per hit</option>
-          </optgroup>
-          <optgroup label="Additive / linear">
-            <option value="none">None — same damage every hit</option>
-            <option value="add1">+1 per hit</option>
-            <option value="add2">+2 per hit</option>
-            <option value="add10">+10 per hit</option>
-            <option value="add100">+100 per hit</option>
-            <option value="add1000">+1000 per hit</option>
-            <option value="triangular">Triangular — each step grows one more than the last</option>
-          </optgroup>
-        </select>
-      </div>
-      <div class="field">
-        <label for="soundA">Custom hit sound (.mp3, optional)</label>
-        <input type="file" id="soundA" accept=".mp3,audio/mpeg">
-        <p class="sound-status" id="soundAStatus">Using default beep</p>
-      </div>
-      <label class="mute-row">
-        <input type="checkbox" id="muteA">
-        <span>No sound on hit</span>
-      </label>
+  <div class="arena-card">
+    <div class="arena-ring">
+      <div class="ball ball-a"></div>
+      <div class="ball ball-b"></div>
+      <div class="vs-mark">VS</div>
     </div>
-
-    <div class="fighter-block">
-      <div class="fighter-title"><span class="swatch" id="swatchB"></span>Fighter 2</div>
-      <div class="field">
-        <label for="nameB">Name</label>
-        <input type="text" id="nameB" maxlength="14" value="FROST">
+    <div class="hp-panel">
+      <div class="hp-row">
+        <div class="hp-name" style="color:var(--a)">BLAZE</div>
+        <div class="hp-track"><div class="hp-fill a"></div></div>
+        <div class="hp-num">64</div>
       </div>
-      <div class="field">
-        <label for="colorB">Color</label>
-        <input type="color" id="colorB" value="#22d3ee">
+      <div class="hp-row">
+        <div class="hp-name" style="color:var(--b)">FROST</div>
+        <div class="hp-track"><div class="hp-fill b"></div></div>
+        <div class="hp-num">41</div>
       </div>
-      <div class="field">
-        <label>HP per bar <span class="val" id="hpBTotal">3,000 total</span></label>
-        <div class="row-3">
-          <input type="number" id="hpB1" min="1" value="1000" title="Bar 1 HP">
-          <input type="number" id="hpB2" min="1" value="1000" title="Bar 2 HP">
-          <input type="number" id="hpB3" min="1" value="1000" title="Bar 3 HP">
-        </div>
-      </div>
-      <div class="row-2">
-        <div class="field">
-          <label for="dmgB">Base damage <span class="val" id="dmgBVal">10</span></label>
-          <input type="range" id="dmgB" min="1" max="100" step="1" value="10">
-        </div>
-        <div class="field">
-          <label for="speedB">Speed <span class="val" id="speedBVal">1.0×</span></label>
-          <input type="range" id="speedB" min="0.4" max="3" step="0.1" value="1">
-        </div>
-      </div>
-      <div class="field">
-        <label for="growthB">Damage growth</label>
-        <select id="growthB">
-          <optgroup label="Sequences">
-            <option value="fibonacci">Fibonacci (1, 1, 2, 3, 5, 8, 13, 21, ...)</option>
-            <option value="factorial">Factorial (1, 2, 6, 24, 120, 720, ...)</option>
-            <option value="squares">Squares (1, 4, 9, 16, 25, 36, ...)</option>
-            <option value="catalan">Catalan numbers (1, 1, 2, 5, 14, 42, ...)</option>
-            <option value="lucas">Lucas numbers (2, 1, 3, 4, 7, 11, ...)</option>
-            <option value="tribonacci">Tribonacci (1, 1, 2, 4, 7, 13, 24, ...)</option>
-          </optgroup>
-          <optgroup label="Multiplicative">
-            <option value="double" selected>Doubling (×2 per hit)</option>
-            <option value="triple">Tripling (×3 per hit)</option>
-            <option value="base18">×1.8 per hit</option>
-            <option value="plus20pct">+20% per hit</option>
-            <option value="plus10pct">+10% per hit</option>
-          </optgroup>
-          <optgroup label="Additive / linear">
-            <option value="none">None — same damage every hit</option>
-            <option value="add1">+1 per hit</option>
-            <option value="add2">+2 per hit</option>
-            <option value="add10">+10 per hit</option>
-            <option value="add100">+100 per hit</option>
-            <option value="add1000">+1000 per hit</option>
-            <option value="triangular">Triangular — each step grows one more than the last</option>
-          </optgroup>
-        </select>
-      </div>
-      <div class="field">
-        <label for="soundB">Custom hit sound (.mp3, optional)</label>
-        <input type="file" id="soundB" accept=".mp3,audio/mpeg">
-        <p class="sound-status" id="soundBStatus">Using default beep</p>
-      </div>
-      <label class="mute-row">
-        <input type="checkbox" id="muteB">
-        <span>No sound on hit</span>
-      </label>
-    </div>
-
-    <div class="panel-actions">
-      <button class="btn btn-primary" id="restartBtn">Restart Battle</button>
-      <button class="btn btn-ghost" id="randomBtn">Randomize</button>
     </div>
   </div>
+</header>
 
-  <!-- CONTROLS: FREE-FOR-ALL -->
-  <div class="panel" id="panel-ffa" style="display:none;">
-    <h2>Free-for-all</h2>
-    <p class="sub">2 to 6 balls, one shared arena. Last one standing wins.</p>
-    <div id="ffaList"></div>
-    <button class="add-btn" id="ffaAddBtn">+ Add fighter</button>
-    <div class="panel-actions">
-      <button class="btn btn-primary" id="ffaRestartBtn">Restart Battle</button>
+<section id="modes" class="wrap">
+  <div class="section-head">
+    <h2>Every battle needs a format</h2>
+    <p>Six ways to turn two balls and a health bar into a video worth watching to the end.</p>
+  </div>
+  <div class="modes-grid">
+    <div class="mode-card">
+      <span class="mode-tag">1v1</span>
+      <h3>Duel</h3>
+      <p>Two balls, two health bars, one arena. Every collision chips away at HP until a single winner is left standing.</p>
+    </div>
+    <div class="mode-card">
+      <span class="mode-tag">Odds</span>
+      <span class="coming-soon">Coming Soon</span>
+      <h3>Underdog</h3>
+      <p>Give one ball a size and damage disadvantage on purpose. The bigger the gap, the more satisfying the comeback.</p>
+    </div>
+    <div class="mode-card">
+      <span class="mode-tag">Chaos</span>
+      <h3>Free-For-All</h3>
+      <p>Add up to six balls to one arena. Health bars stack on screen and the field thins out hit by hit.</p>
+    </div>
+    <div class="mode-card">
+      <span class="mode-tag">Bracket</span>
+      <span class="coming-soon">Coming Soon</span>
+      <h3>Tournament</h3>
+      <p>Run a string of duels back to back and carry the winner's damaged health bar into the next round.</p>
+    </div>
+    <div class="mode-card">
+      <span class="mode-tag">Boss</span>
+      <h3>Boss Fight</h3>
+      <p>One oversized ball with a health bar in the thousands against a swarm of small ones chipping it down.</p>
+    </div>
+    <div class="mode-card">
+      <span class="mode-tag">Roulette</span>
+      <span class="coming-soon">Coming Soon</span>
+      <h3>Damage Roulette</h3>
+      <p>Hit damage is randomized within a range you set, so even a rematch with the same names never plays out the same way.</p>
     </div>
   </div>
+</section>
 
-  <!-- CONTROLS: BOSS FIGHT -->
-  <div class="panel" id="panel-boss" style="display:none;">
-    <h2>Boss Fight</h2>
-    <p class="sub">One oversized boss against a swarm of small balls. Minions don't damage each other.</p>
-
-    <div class="fighter-row">
-      <div class="fighter-row-head">
-        <input type="color" id="bossColor" value="#ff3b5c">
-        <input type="text" id="bossName" value="TITAN" maxlength="14">
-      </div>
-      <div class="row-fields">
-        <div class="field"><label>HP</label><input type="number" id="bossHp" value="12000" min="500"></div>
-        <div class="field"><label>Damage</label><input type="number" id="bossDmg" value="60" min="1"></div>
-        <div class="field field-full"><label>Damage growth</label><select id="bossGrowth"></select></div>
-      </div>
+<section id="how" class="wrap">
+  <div class="section-head">
+    <h2>From idea to export in four steps</h2>
+    <p>No design skills needed. The defaults already look like a finished clip.</p>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <div class="num">1</div>
+      <h3>Name your fighters</h3>
+      <p>Type two names — a rivalry, two friends, two brands — anything that gives the fight a reason to matter.</p>
     </div>
-
-    <div class="fighter-row">
-      <div class="fighter-row-head">
-        <input type="color" id="swarmColor" value="#22d3ee">
-        <input type="text" id="swarmName" value="MINION" maxlength="14">
-      </div>
-      <div class="row-fields">
-        <div class="field"><label>HP each</label><input type="number" id="swarmHp" value="400" min="50"></div>
-        <div class="field"><label>Damage each</label><input type="number" id="swarmDmg" value="15" min="1"></div>
-        <div class="field field-full"><label>Damage growth</label><select id="swarmGrowth"></select></div>
-      </div>
+    <div class="step">
+      <div class="num">2</div>
+      <h3>Set colors & damage</h3>
+      <p>Pick each ball's color, size, and hit damage. Even the odds, or don't — that's the story you're telling.</p>
     </div>
-
-    <div class="swarm-count">
-      <label style="font-size:12.5px;color:var(--muted);white-space:nowrap;">Swarm size <span id="swarmCountVal">4</span></label>
-      <input type="range" id="swarmCount" min="2" max="15" value="4">
+    <div class="step">
+      <div class="num">3</div>
+      <h3>Run the battle</h3>
+      <p>Press start and watch the health bars drain in real time. Restart as many times as it takes to get a clean finish.</p>
     </div>
-
-    <div class="panel-actions">
-      <button class="btn btn-primary" id="bossRestartBtn">Restart Battle</button>
+    <div class="step">
+      <div class="num">4</div>
+      <h3>Export & post</h3>
+      <p>Render an MP4 in vertical 1080×1920, download it, and post — no watermark, no re-encoding.</p>
     </div>
   </div>
+</section>
 
-  <!-- CANVAS -->
-  <div class="canvas-panel">
-    <div id="canvas-wrap">
-      <canvas id="c"></canvas>
-      <div id="start-overlay">Tap to start</div>
-    </div>
-    <div class="hud" id="hud" style="display:none;"></div>
-    <p class="status-line" id="statusLine">Configure your fighters, then tap the arena to begin.</p>
-    <button class="btn-record" id="recordBtn">● Record clip</button>
-    <p class="rec-note" id="recNote">Records the battle and downloads it as an MP4, ready for TikTok.</p>
+<section id="features" class="wrap">
+  <div class="section-head">
+    <h2>Built to be tweaked</h2>
+    <p>Every fight is made of small settings. Change one and the whole clip feels different.</p>
   </div>
+  <div class="feat-grid">
+    <div class="feat"><div class="icon">🩸</div><h3>Multi-stage health bars</h3><p>Segment each ball's HP into stages so a fight has visible turning points, not just one long bar draining.</p></div>
+    <div class="feat"><div class="icon">💥</div><h3>Hit & damage counters</h3><p>A running counter tracks hits landed and total damage dealt, live on screen as the fight plays.</p></div>
+    <div class="feat"><div class="icon">🎨</div><h3>Custom names & colors</h3><p>Every fighter gets a name label and a color, so viewers always know who's winning at a glance.</p></div>
+    <div class="feat"><div class="icon">🖼️</div><h3>Custom ball image</h3><p>Drop in a logo, a face, or an emoji instead of a plain color — great for brand or fan-vs-fan clips.</p></div>
+    <div class="feat"><div class="icon">🔊</div><h3>Impact sound</h3><p>Each hit triggers a sound cue, so the fight has an audio rhythm even before you add music.</p></div>
+    <div class="feat"><div class="icon">🎬</div><h3>Vertical export</h3><p>Render straight to 1080×1920 MP4, 10–120 seconds, ready to drop into TikTok, Reels, or Shorts.</p></div>
+  </div>
+</section>
 
+<section id="pricing" class="wrap">
+  <div class="section-head">
+    <h2>Start free, upgrade when you're posting daily</h2>
+    <p>Every plan runs in your browser. Nothing to install.</p>
+  </div>
+  <div class="price-grid">
+    <div class="price-card">
+      <h3>Free</h3>
+      <div class="price-amount">0 €<span>/month</span></div>
+      <ul class="price-list">
+        <li>1v1 Duel and Underdog modes</li>
+        <li>Standard health bars & colors</li>
+        <li>720p export with watermark</li>
+        <li>Up to 30 second clips</li>
+        <li>Up to 7 clips</li>
+      </ul>
+      <button class="btn-light pricing-cta open-signup-trigger">Start Free</button>
+    </div>
+    <div class="price-card pro">
+      <h3>Pro</h3>
+      <div class="price-amount">14 €<span>/month</span></div>
+      <ul class="price-list">
+        <li>All battle modes, including Boss Fight & Tournament</li>
+        <li>Multi-stage health bars & custom ball images</li>
+        <li>1080×1920 export, no watermark</li>
+        <li>Up to 120 second clips</li>
+        <li>Save unlimited fighter presets</li>
+      </ul>
+      <button class="btn-primary pricing-cta open-signup-trigger">Go Pro</button>
+    </div>
+  </div>
+</section>
+
+<section id="faq" class="wrap">
+  <div class="section-head">
+    <h2>Frequently asked questions</h2>
+  </div>
+  <div class="faq-list">
+    <div class="faq-item">
+      <button class="faq-q">Do I need an account to try it?<span class="plus">+</span></button>
+      <div class="faq-a"><p>Yes. Sign up for the free trial to unlock the builder — it takes a few seconds and gives you 3 days with up to 7 exported clips.</p></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">Can I use the clips commercially?<span class="plus">+</span></button>
+      <div class="faq-a"><p>Yes. Anything you export, on any plan, is yours to post, monetize, or use commercially.</p></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">Does it work on mobile?<span class="plus">+</span></button>
+      <div class="faq-a"><p>Yes, the builder is fully responsive, though the desktop layout gives you more room to fine-tune settings.</p></div>
+    </div>
+    <div class="faq-item">
+      <button class="faq-q">Can I save a fighter setup and reuse it?<span class="plus">+</span></button>
+      <div class="faq-a"><p>Pro plans can save unlimited presets — names, colors, and damage settings — so a daily series stays consistent.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="contact" class="wrap">
+  <div class="section-head">
+    <h2>Got feedback?</h2>
+    <p>Bugs, feature requests, anything — send it straight to us.</p>
+  </div>
+  <form id="contactForm" class="contact-form" action="https://formspree.io/f/xrpbezjk" method="POST">
+    <div class="row-2">
+      <div class="field">
+        <label for="contact-name">Name</label>
+        <input type="text" id="contact-name" name="name" required autocomplete="name">
+      </div>
+      <div class="field">
+        <label for="contact-email">Email</label>
+        <input type="email" id="contact-email" name="email" required autocomplete="email">
+      </div>
+    </div>
+    <div class="field">
+      <label for="contact-message">Message</label>
+      <textarea id="contact-message" name="message" rows="5" required placeholder="Bug report, idea, anything on your mind..."></textarea>
+    </div>
+    <button type="submit" class="btn-primary" id="contactSubmitBtn">Send message</button>
+    <p class="modal-error" id="contact-error">Please fill in every field.</p>
+    <p class="contact-success" id="contact-success">Thanks — message sent. We'll get back to you.</p>
+  </form>
+</section>
+
+<footer class="wrap">
+  <div class="footer-inner">
+    <div>© 2026 ClashArena</div>
+    <div class="footer-links">
+      <a href="#">About</a>
+      <a href="#">Blog</a>
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+      <a href="#">Feedback</a>
+    </div>
+  </div>
+</footer>
+
+<div class="modal-overlay" id="authModal">
+  <div class="modal-card">
+    <button class="modal-close" id="modalClose" aria-label="Close">×</button>
+
+    <div id="modalForms">
+      <div class="modal-tabs">
+        <button class="modal-tab active" data-pane="signup">Sign Up</button>
+        <button class="modal-tab" data-pane="login">Log In</button>
+      </div>
+
+      <div class="form-pane active" id="pane-signup">
+        <h2>Create your account</h2>
+        <p class="modal-sub">Save fighter presets and export your battles.</p>
+        <form id="signupForm">
+          <div class="field">
+            <label for="su-name">Name</label>
+            <input type="text" id="su-name" required autocomplete="name">
+          </div>
+          <div class="field">
+            <label for="su-email">Email</label>
+            <input type="email" id="su-email" required autocomplete="email">
+          </div>
+          <div class="field">
+            <label for="su-password">Password</label>
+            <input type="password" id="su-password" required minlength="8" autocomplete="new-password">
+          </div>
+          <button type="submit" class="modal-submit">Create Account</button>
+          <p class="modal-error" id="su-error">Please fill in every field (password: 8+ characters).</p>
+        </form>
+      </div>
+
+      <div class="form-pane" id="pane-login">
+        <h2>Welcome back</h2>
+        <p class="modal-sub">Log in to pick up where you left off.</p>
+        <form id="loginForm">
+          <div class="field">
+            <label for="li-email">Email</label>
+            <input type="email" id="li-email" required autocomplete="email">
+          </div>
+          <div class="field">
+            <label for="li-password">Password</label>
+            <input type="password" id="li-password" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="modal-submit">Log In</button>
+          <p class="modal-error" id="li-error">Please enter your email and password.</p>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal-success" id="modalSuccess">
+      <div class="icon">🥊</div>
+      <h2 id="successHeading">You're in</h2>
+      <p id="successSub">Your account is ready. Time to build a battle.</p>
+    </div>
+  </div>
 </div>
 
 <script>
-/* ============ Canvas / layout constants ============ */
-const canvas = document.getElementById('c');
-const ctx = canvas.getContext('2d');
-let currentMode = 'duel'; // 'duel' | 'ffa' | 'boss' \u2014 declared early, several functions below read it
-
-const W = 420;
-const LABEL_H = 32;
-const ARENA_H = 190;
-const BAR_H = 34;
-const TIERS = 3;
-const CHECKER_H = 10;
-const VS_H = 34;
-
-const TOP_LABEL_Y0 = 0, TOP_LABEL_Y1 = LABEL_H;
-const TOP_ARENA_Y0 = TOP_LABEL_Y1, TOP_ARENA_Y1 = TOP_ARENA_Y0 + ARENA_H;
-const TOP_BAR_Y1 = TOP_ARENA_Y1 + BAR_H * TIERS;
-const TOP_CHECKER_Y0 = TOP_BAR_Y1, TOP_CHECKER_Y1 = TOP_CHECKER_Y0 + CHECKER_H;
-
-const VS_Y0 = TOP_CHECKER_Y1, VS_Y1 = VS_Y0 + VS_H;
-
-const BOT_LABEL_Y0 = VS_Y1, BOT_LABEL_Y1 = BOT_LABEL_Y0 + LABEL_H;
-const BOT_ARENA_Y0 = BOT_LABEL_Y1, BOT_ARENA_Y1 = BOT_ARENA_Y0 + ARENA_H;
-const BOT_BAR_Y1 = BOT_ARENA_Y1 + BAR_H * TIERS;
-const BOT_CHECKER_Y0 = BOT_BAR_Y1, BOT_CHECKER_Y1 = BOT_CHECKER_Y0 + CHECKER_H;
-
-const H = BOT_CHECKER_Y1;
-const W_MULTI = 440, H_MULTI = 460; // logical arena size for Free-for-all / Boss Fight
-const EXPORT_RENDER_SCALE = 1080 / W; // used only while actually recording a clip
-const DISPLAY_RENDER_SCALE = Math.min(2, window.devicePixelRatio || 1); // crisp but cheap during normal play
-let activeRenderScale = DISPLAY_RENDER_SCALE;
-
-function activeWH(){
-  return currentMode === 'duel' ? { w: W, h: H } : { w: W_MULTI, h: H_MULTI };
-}
-function setCanvasResolution(scale){
-  activeRenderScale = scale;
-  const { w, h } = activeWH();
-  canvas.width = Math.round(w * scale);
-  canvas.height = Math.round(h * scale);
-}
-setCanvasResolution(DISPLAY_RENDER_SCALE);
-
-function resizeCanvas(){
-  const wrap = document.getElementById('canvas-wrap');
-  const availW = Math.min(wrap.clientWidth, 460);
-  const { w, h } = activeWH();
-  canvas.style.width = availW + 'px';
-  canvas.style.height = (availW * h / w) + 'px';
-}
-window.addEventListener('resize', resizeCanvas);
-
-const GRAVITY = 0.22;
-const BOUNCE_VY = 9;
-const BALL_SPEED_BASE = 2.6;
-
-/* ============ Audio (simple synth beep, no external assets) ============ */
-let audioCtx = null;
-let audioDest = null;
-let keepAliveOsc = null;
-function ensureAudio(){
-  if(!audioCtx){
-    try{
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      audioDest = audioCtx.createMediaStreamDestination();
-      // Keep the recorded audio track continuously "live" (inaudible) so
-      // MediaRecorder never sees a gap between beeps and drifts out of sync.
-      keepAliveOsc = audioCtx.createOscillator();
-      const keepAliveGain = audioCtx.createGain();
-      keepAliveGain.gain.value = 0.00001;
-      keepAliveOsc.frequency.value = 20;
-      keepAliveOsc.connect(keepAliveGain);
-      keepAliveGain.connect(audioDest);
-      keepAliveOsc.start();
-    }catch(e){}
-  } else if(audioCtx.state === 'suspended'){ audioCtx.resume(); }
-}
-function beep(freq, dur, vol){
-  if(!audioCtx) return;
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.type = 'square';
-  osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-  gain.gain.setValueAtTime(vol || 0.12, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);   // audible to the person
-  if(audioDest) gain.connect(audioDest); // also captured for recording
-  osc.start(); osc.stop(audioCtx.currentTime + dur);
-}
-
-/* ============ Custom hit sounds (.mp3 upload, one per fighter) ============ */
-const customSounds = { A: null, B: null };
-
-function playCustomHitSound(key){
-  const buffer = customSounds[key];
-  if(!buffer || !audioCtx) return;
-  const src = audioCtx.createBufferSource();
-  src.buffer = buffer;
-  const gain = audioCtx.createGain();
-  gain.gain.value = 0.7;
-  src.connect(gain);
-  gain.connect(audioCtx.destination);
-  if(audioDest) gain.connect(audioDest);
-  src.start();
-}
-
-function setupSoundUpload(inputId, statusId, key){
-  const input = document.getElementById(inputId);
-  const status = document.getElementById(statusId);
-
-  function showDefault(){
-    status.classList.remove('error');
-    status.textContent = 'Using default beep';
-  }
-  function showLoaded(name){
-    status.classList.remove('error');
-    status.innerHTML = '';
-    status.append('Using: ' + name + ' ');
-    const clearBtn = document.createElement('button');
-    clearBtn.type = 'button';
-    clearBtn.className = 'clear-sound';
-    clearBtn.textContent = 'Remove';
-    clearBtn.addEventListener('click', () => {
-      customSounds[key] = null;
-      input.value = '';
-      showDefault();
-    });
-    status.appendChild(clearBtn);
-  }
-  function showError(msg){
-    status.classList.add('error');
-    status.textContent = msg;
-  }
-
-  input.addEventListener('change', async () => {
-    const file = input.files && input.files[0];
-    if(!file) return;
-    const isMp3 = file.type === 'audio/mpeg' || file.name.toLowerCase().endsWith('.mp3');
-    if(!isMp3){
-      showError('Only .mp3 files are allowed.');
-      input.value = '';
-      customSounds[key] = null;
-      return;
-    }
-    try{
-      ensureAudio();
-      const arrayBuffer = await file.arrayBuffer();
-      const buffer = await audioCtx.decodeAudioData(arrayBuffer.slice(0));
-      customSounds[key] = buffer;
-      showLoaded(file.name);
-    }catch(e){
-      showError('Could not read that MP3. Try a different file.');
-      input.value = '';
-      customSounds[key] = null;
-    }
-  });
-}
-setupSoundUpload('soundA', 'soundAStatus', 'A');
-setupSoundUpload('soundB', 'soundBStatus', 'B');
-
-function bindMuteToggle(muteId, fileId){
-  const mute = document.getElementById(muteId);
-  const file = document.getElementById(fileId);
-  const update = () => {
-    file.disabled = mute.checked;
-    file.closest('.field').style.opacity = mute.checked ? '0.5' : '1';
-  };
-  mute.addEventListener('change', update);
-  update();
-}
-bindMuteToggle('muteA', 'soundA');
-bindMuteToggle('muteB', 'soundB');
-
-/* ============ Config from UI ============ */
-function readTierHp(prefix){
-  return [1,2,3].map(n => Math.max(1, parseInt(document.getElementById(prefix + n).value, 10) || 1));
-}
-function readConfig(){
-  return {
-    A: {
-      name: document.getElementById('nameA').value.trim().toUpperCase() || 'FIGHTER 1',
-      color: document.getElementById('colorA').value,
-      tierHp: readTierHp('hpA'),
-      dmg: parseInt(document.getElementById('dmgA').value, 10),
-      growthKey: document.getElementById('growthA').value,
-      speed: parseFloat(document.getElementById('speedA').value),
-    },
-    B: {
-      name: document.getElementById('nameB').value.trim().toUpperCase() || 'FIGHTER 2',
-      color: document.getElementById('colorB').value,
-      tierHp: readTierHp('hpB'),
-      dmg: parseInt(document.getElementById('dmgB').value, 10),
-      growthKey: document.getElementById('growthB').value,
-      speed: parseFloat(document.getElementById('speedB').value),
-    }
-  };
-}
-
-/* live label updates */
-function bindLiveLabel(rangeId, labelId, fmt){
-  const el = document.getElementById(rangeId);
-  const label = document.getElementById(labelId);
-  const update = () => { label.textContent = fmt(parseFloat(el.value)); };
-  el.addEventListener('input', update);
-  update();
-}
-function bindTierTotal(prefix, totalId){
-  const ids = [1,2,3].map(n => document.getElementById(prefix + n));
-  const totalEl = document.getElementById(totalId);
-  const update = () => {
-    const sum = ids.reduce((s,el) => s + (parseInt(el.value,10) || 0), 0);
-    totalEl.textContent = sum.toLocaleString('en-US') + ' total';
-  };
-  ids.forEach(el => el.addEventListener('input', update));
-  update();
-}
-bindTierTotal('hpA','hpATotal');
-bindTierTotal('hpB','hpBTotal');
-bindLiveLabel('dmgA','dmgAVal', v => Math.round(v).toLocaleString('en-US'));
-bindLiveLabel('dmgB','dmgBVal', v => Math.round(v).toLocaleString('en-US'));
-bindLiveLabel('speedA','speedAVal', v => v.toFixed(1) + '×');
-bindLiveLabel('speedB','speedBVal', v => v.toFixed(1) + '×');
-
-function syncSwatches(){
-  document.getElementById('swatchA').style.background = document.getElementById('colorA').value;
-  document.getElementById('swatchB').style.background = document.getElementById('colorB').value;
-}
-document.getElementById('colorA').addEventListener('input', syncSwatches);
-document.getElementById('colorB').addEventListener('input', syncSwatches);
-syncSwatches();
-
-/* ============ Game state ============ */
-let top_, bot_, cfg, popups, started, gameOver, winner, winnerColor;
-
-function makeFighter(conf, arenaY0, arenaY1orig){
-  const angle = Math.random() * Math.PI * 2;
-  const spd = BALL_SPEED_BASE * conf.speed;
-  return {
-    conf,
-    x: W/2, y: arenaY0 + ARENA_H/2,
-    vx: Math.cos(angle) * spd, vy: Math.sin(angle) * spd,
-    r: 15,
-    bars: conf.tierHp.slice(),
-    hitCount: 0,
-    arenaY0, arenaY1orig,
-    finished: false,
-  };
-}
-
-function activeBarIndex(bars){
-  for(let i=0;i<bars.length;i++) if(bars[i] > 0) return i;
-  return bars.length;
-}
-function isDepleted(bars){ return bars.every(h => h <= 0); }
-
-/* ============ Damage growth sequences ============ */
-/* All sequences are defined so that hit #1 always equals the base damage;
-   growth after that follows the named pattern. n is the 1-indexed hit number. */
-function seqFibonacci(n){ let a=1,b=1; if(n<=2) return 1; for(let i=3;i<=n;i++){const c=a+b;a=b;b=c;} return b; }
-function seqFactorial(n){ let r=1; for(let i=2;i<=n;i++) r*=i; return r; }
-function seqSquares(n){ return n*n; }
-function seqCatalan(n){ let c=1; for(let k=0;k<n-1;k++){ c = c*2*(2*k+1)/(k+2); } return c; }
-function seqLucas(n){ let a=2,b=1; if(n===1) return a; if(n===2) return b; for(let i=3;i<=n;i++){const c=a+b;a=b;b=c;} return b; }
-function seqTribonacci(n){ if(n===1||n===2) return 1; if(n===3) return 2; let a=1,b=1,c=2; for(let i=4;i<=n;i++){const d=a+b+c;a=b;b=c;c=d;} return c; }
-
-function clampVal(v){ return (isFinite(v) && v > 0) ? Math.min(v, 1e15) : 1; }
-
-function nextDamage(fighter){
-  const n = fighter.hitCount + 1; // 1-indexed hit number, so n=1 is the upcoming hit
-  const base = fighter.conf.dmg;
-  const key = fighter.conf.growthKey;
-  let val;
-  switch(key){
-    case 'fibonacci':  val = base * seqFibonacci(n)  / seqFibonacci(1);  break;
-    case 'factorial':  val = base * seqFactorial(n)  / seqFactorial(1);  break;
-    case 'squares':    val = base * seqSquares(n)    / seqSquares(1);    break;
-    case 'catalan':    val = base * seqCatalan(n)    / seqCatalan(1);    break;
-    case 'lucas':      val = base * seqLucas(n)      / seqLucas(1);      break;
-    case 'tribonacci': val = base * seqTribonacci(n) / seqTribonacci(1); break;
-    case 'double':     val = base * Math.pow(2, n-1);   break;
-    case 'triple':     val = base * Math.pow(3, n-1);   break;
-    case 'base18':     val = base * Math.pow(1.8, n-1); break;
-    case 'plus20pct':  val = base * Math.pow(1.2, n-1); break;
-    case 'plus10pct':  val = base * Math.pow(1.1, n-1); break;
-    case 'add1':       val = base + (n-1) * 1;    break;
-    case 'add2':       val = base + (n-1) * 2;    break;
-    case 'add10':      val = base + (n-1) * 10;   break;
-    case 'add100':     val = base + (n-1) * 100;  break;
-    case 'add1000':    val = base + (n-1) * 1000; break;
-    case 'triangular': val = base + (n-1) * n / 2; break;
-    case 'none':
-    default:           val = base; break;
-  }
-  return Math.max(1, Math.round(clampVal(val)));
-}
-
-function addPopup(x,y,text,color){ popups.push({x,y,text,color,age:0}); }
-
-function resetGameDuel(){
-  cfg = readConfig();
-  top_ = makeFighter(cfg.A, TOP_ARENA_Y0, TOP_ARENA_Y1); top_.key = 'A';
-  bot_ = makeFighter(cfg.B, BOT_ARENA_Y0, BOT_ARENA_Y1); bot_.key = 'B';
-  popups = [];
-  started = false;
-  gameOver = false;
-  winner = null;
-  winnerColor = null;
-  document.getElementById('start-overlay').style.display = 'flex';
-  document.getElementById('start-overlay').textContent = 'Tap to start';
-  document.getElementById('statusLine').textContent = 'Configure your fighters, then tap the arena to begin.';
-}
-
-function startGame(){
-  if(started) return;
-  ensureAudio();
-  started = true;
-  document.getElementById('start-overlay').style.display = 'none';
-  document.getElementById('statusLine').textContent = cfg.A.name + ' vs ' + cfg.B.name + ' — fight!';
-}
-document.getElementById('start-overlay').addEventListener('click', startGame);
-
-function currentFloor(f){
-  if(isDepleted(f.bars)){
-    return f.arenaY1orig + TIERS * BAR_H + CHECKER_H; // past the empty bars, onto the checkered finish line
-  }
-  return f.arenaY1orig + activeBarIndex(f.bars) * BAR_H;
-}
-
-function stepFighter(f, dt){
-  const barsGone = isDepleted(f.bars);
-  const floor = currentFloor(f);
-  const x0 = 10, x1 = W - 10, y0 = f.arenaY0 + 8, y1 = floor - 8;
-  f.vy += GRAVITY * dt;
-  f.x += f.vx * dt; f.y += f.vy * dt;
-  if(f.x - f.r < x0){ f.x = x0 + f.r; f.vx *= -1; }
-  if(f.x + f.r > x1){ f.x = x1 - f.r; f.vx *= -1; }
-  if(f.y - f.r < y0){ f.y = y0 + f.r; f.vy *= -1; }
-  if(f.y + f.r > y1){
-    f.y = y1 - f.r;
-    if(!barsGone){
-      f.vy = -BOUNCE_VY * Math.sqrt(f.conf.speed);
-      f.hitCount++;
-      const dmg = nextDamage(f);
-      const bars = f.bars;
-      for(let i=0;i<bars.length;i++){ if(bars[i] > 0){ bars[i] = Math.max(0, bars[i]-dmg); break; } }
-      addPopup(f.x, f.y, '-' + dmg.toLocaleString('en-US'), f.conf.color);
-      const muted = document.getElementById(f.key === 'A' ? 'muteA' : 'muteB').checked;
-      if(!muted){
-        beep(f === top_ ? 220 : 330, 0.08, 0.1);
-        playCustomHitSound(f.key);
-      }
-    } else {
-      // touched the checkered finish line — this is the actual win condition
-      f.vy = 0;
-      if(!f.finished){
-        f.finished = true;
-        if(!winner){
-          winner = f.conf.name;
-          winnerColor = f.conf.color;
-          gameOver = true;
-          document.getElementById('statusLine').textContent = winner + ' wins the battle!';
-        }
-      }
-    }
-  }
-}
-
-function updateDuel(dt){
-  if(!started || gameOver) return;
-  stepFighter(top_, dt);
-  stepFighter(bot_, dt);
-  for(let i=popups.length-1;i>=0;i--){ popups[i].age++; if(popups[i].age > 36) popups.splice(i,1); }
-}
-
-/* ============ Drawing ============ */
-function drawArenaBg(y0,y1){
-  ctx.fillStyle = '#fdfaf2';
-  ctx.fillRect(0,y0,W,y1-y0);
-  ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
-  ctx.strokeRect(1,y0+1,W-2,(y1-y0)-2);
-}
-function drawChecker(y0,y1){
-  const sq = 12; let flip = false;
-  for(let x=0;x<W;x+=sq){
-    ctx.fillStyle = flip ? '#fff' : '#111';
-    ctx.fillRect(x,y0,sq,y1-y0);
-    flip = !flip;
-  }
-}
-function drawBall(f){
-  ctx.beginPath();
-  ctx.arc(f.x, f.y, f.r, 0, Math.PI*2);
-  ctx.fillStyle = f.conf.color;
-  ctx.fill();
-  ctx.lineWidth = 2; ctx.strokeStyle = '#000'; ctx.stroke();
-  ctx.fillStyle = '#fff';
-  ctx.font = '900 12px Arial';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(f.conf.name.charAt(0), f.x, f.y+1);
-}
-function drawHealthSegment(y0,y1,color,hp){
-  if(hp <= 0){ ctx.fillStyle = '#0E0F13'; ctx.fillRect(0,y0,W,y1-y0); return; }
-  ctx.fillStyle = color; ctx.fillRect(0,y0,W,y1-y0);
-  ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5; ctx.strokeRect(0.5,y0+0.5,W-1,(y1-y0)-1);
-  ctx.fillStyle = '#fff'; ctx.font = '900 15px Arial';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(Math.max(0, Math.round(hp)).toLocaleString('en-US'), W/2, (y0+y1)/2);
-}
-function drawBars(f){
-  const activeIdx = activeBarIndex(f.bars);
-  const floor = f.arenaY1orig + activeIdx * BAR_H;
-  for(let i=activeIdx;i<f.bars.length;i++){
-    const y0 = floor + (i-activeIdx)*BAR_H;
-    drawHealthSegment(y0, y0+BAR_H, f.conf.color, f.bars[i]);
-  }
-}
-function drawLabel(y0,y1,f){
-  ctx.fillStyle = f.conf.color;
-  ctx.font = '900 17px Arial';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(f.conf.name, W/2, (y0+y1)/2);
-}
-function drawPopups(f){
-  for(const p of popups){
-    if(p.color !== f.conf.color) continue;
-    ctx.globalAlpha = Math.max(0, 1 - p.age/36);
-    ctx.fillStyle = f.conf.color;
-    ctx.font = 'bold 13px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText(p.text, p.x, p.y - p.age*0.6);
-    ctx.globalAlpha = 1;
-  }
-}
-
-function drawDuel(){
-  ctx.setTransform(activeRenderScale, 0, 0, activeRenderScale, 0, 0);
-  ctx.clearRect(0,0,W,H);
-  ctx.fillStyle = '#e9ddc4'; ctx.fillRect(0,0,W,H);
-
-  drawLabel(TOP_LABEL_Y0, TOP_LABEL_Y1, top_);
-  const topFloor = currentFloor(top_);
-  drawArenaBg(TOP_ARENA_Y0, topFloor);
-  ctx.save(); ctx.beginPath(); ctx.rect(0,TOP_ARENA_Y0,W,topFloor-TOP_ARENA_Y0); ctx.clip();
-  drawBall(top_); drawPopups(top_);
-  ctx.restore();
-  drawBars(top_);
-  drawChecker(TOP_CHECKER_Y0, TOP_CHECKER_Y1);
-
-  ctx.fillStyle = '#111'; ctx.font = '900 18px Arial';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText('VS', W/2, (VS_Y0+VS_Y1)/2);
-
-  drawLabel(BOT_LABEL_Y0, BOT_LABEL_Y1, bot_);
-  const botFloor = currentFloor(bot_);
-  drawArenaBg(BOT_ARENA_Y0, botFloor);
-  ctx.save(); ctx.beginPath(); ctx.rect(0,BOT_ARENA_Y0,W,botFloor-BOT_ARENA_Y0); ctx.clip();
-  drawBall(bot_); drawPopups(bot_);
-  ctx.restore();
-  drawBars(bot_);
-  drawChecker(BOT_CHECKER_Y0, BOT_CHECKER_Y1);
-
-  if(gameOver && winner){
-    ctx.fillStyle = 'rgba(8,9,12,0.55)';
-    ctx.fillRect(0, H/2 - 24, W, 48);
-    ctx.fillStyle = winnerColor || '#FFC94A';
-    ctx.font = '900 20px Arial';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(winner + ' WINS', W/2, H/2);
-  }
-}
-
-let lastFrameTime = null;
-function loop(timestamp){
-  if(lastFrameTime === null) lastFrameTime = timestamp;
-  let dt = (timestamp - lastFrameTime) / (1000 / 60); // normalized: 1.0 == one 60fps frame's worth of time
-  lastFrameTime = timestamp;
-  dt = Math.min(Math.max(dt, 0), 3); // clamp so a stall (e.g. tab switch) can't make the ball tunnel through the floor
-  if(currentMode === 'duel'){
-    updateDuel(dt);
-    drawDuel();
-  } else {
-    updateMulti(dt);
-    drawMulti();
-  }
-  requestAnimationFrame(loop);
-}
-function resetGame(){
-  if(currentMode === 'duel') resetGameDuel();
-  else resetGameMulti();
-}
-
-/* ============ Controls wiring ============ */
-document.getElementById('restartBtn').addEventListener('click', resetGame);
-document.getElementById('randomBtn').addEventListener('click', () => {
-  const rand = (min,max) => Math.round(min + Math.random()*(max-min));
-  const randColor = () => '#' + Math.floor(Math.random()*0xffffff).toString(16).padStart(6,'0');
-  ['hpA1','hpA2','hpA3','hpB1','hpB2','hpB3'].forEach(id => {
-    document.getElementById(id).value = rand(300,5000);
-  });
-  document.getElementById('dmgA').value = rand(5,60);
-  document.getElementById('dmgB').value = rand(5,60);
-  document.getElementById('speedA').value = (0.6 + Math.random()*2).toFixed(1);
-  document.getElementById('speedB').value = (0.6 + Math.random()*2).toFixed(1);
-  document.getElementById('colorA').value = randColor();
-  document.getElementById('colorB').value = randColor();
-  ['hpA1','hpA2','hpA3','hpB1','hpB2','hpB3','dmgA','dmgB','speedA','speedB'].forEach(id => {
-    document.getElementById(id).dispatchEvent(new Event('input'));
-  });
-  syncSwatches();
-  resetGame();
-});
-
-/* Restart automatically whenever a config field changes, before the battle starts */
-['nameA','nameB','colorA','colorB','hpA1','hpA2','hpA3','hpB1','hpB2','hpB3','dmgA','dmgB','growthA','growthB','speedA','speedB'].forEach(id => {
-  document.getElementById(id).addEventListener('change', () => { if(!started) resetGame(); });
-});
-
-/* ============ MULTI-BALL ENGINE (Free-for-all + Boss Fight) ============ */
-const GROWTH_OPTIONS = [
-  ['fibonacci','Fibonacci (1, 1, 2, 3, 5, 8, ...)'],
-  ['factorial','Factorial (1, 2, 6, 24, 120, ...)'],
-  ['squares','Squares (1, 4, 9, 16, 25, ...)'],
-  ['catalan','Catalan numbers (1, 1, 2, 5, 14, ...)'],
-  ['lucas','Lucas numbers (2, 1, 3, 4, 7, ...)'],
-  ['tribonacci','Tribonacci (1, 1, 2, 4, 7, ...)'],
-  ['double','Doubling (\u00d72 per hit)'],
-  ['triple','Tripling (\u00d73 per hit)'],
-  ['base18','\u00d71.8 per hit'],
-  ['plus20pct','+20% per hit'],
-  ['plus10pct','+10% per hit'],
-  ['none','None \u2014 same damage every hit'],
-  ['add1','+1 per hit'],
-  ['add2','+2 per hit'],
-  ['add10','+10 per hit'],
-  ['add100','+100 per hit'],
-  ['triangular','Triangular \u2014 grows one more each step'],
-];
-function populateGrowthSelect(sel){
-  sel.innerHTML = GROWTH_OPTIONS.map(([v,l]) => '<option value="'+v+'">'+l+'</option>').join('');
-  sel.value = 'double';
-}
-function nextDamageMulti(f){
-  const n = f.hitCount + 1;
-  const base = f.dmg;
-  let val;
-  switch(f.growthKey){
-    case 'fibonacci':  val = base*seqFibonacci(n)/seqFibonacci(1); break;
-    case 'factorial':  val = base*seqFactorial(n)/seqFactorial(1); break;
-    case 'squares':    val = base*seqSquares(n)/seqSquares(1); break;
-    case 'catalan':    val = base*seqCatalan(n)/seqCatalan(1); break;
-    case 'lucas':      val = base*seqLucas(n)/seqLucas(1); break;
-    case 'tribonacci': val = base*seqTribonacci(n)/seqTribonacci(1); break;
-    case 'double':     val = base*Math.pow(2,n-1); break;
-    case 'triple':     val = base*Math.pow(3,n-1); break;
-    case 'base18':     val = base*Math.pow(1.8,n-1); break;
-    case 'plus20pct':  val = base*Math.pow(1.2,n-1); break;
-    case 'plus10pct':  val = base*Math.pow(1.1,n-1); break;
-    case 'add1':       val = base+(n-1)*1; break;
-    case 'add2':       val = base+(n-1)*2; break;
-    case 'add10':      val = base+(n-1)*10; break;
-    case 'add100':     val = base+(n-1)*100; break;
-    case 'triangular': val = base+(n-1)*n/2; break;
-    case 'none': default: val = base; break;
-  }
-  return Math.max(1, Math.round(clampVal(val)));
-}
-
-const M_GRAVITY = 0, M_WALL_BOUNCE = 0.98, M_KICK = 6.5;
-let mFighters = [], mPopups = [], mStarted=false, mGameOver=false, mWinner=null;
-
-function makeFighterMulti(conf){
-  const r = conf.isBoss ? 42 : 16;
-  const angle = Math.random()*Math.PI*2;
-  const spd = 2.4*conf.speed;
-  return {
-    name: conf.name, color: conf.color, maxHp: conf.hp, hp: conf.hp,
-    dmg: conf.dmg, growthKey: conf.growthKey, speed: conf.speed, r,
-    isBoss: !!conf.isBoss,
-    x: 0, y: 0,
-    vx: Math.cos(angle)*spd, vy: Math.sin(angle)*spd,
-    hitCount: 0, alive: true, fadeT: 0, contacts: new Set(),
-  };
-}
-function placeFightersWithoutOverlap(list){
-  const order = [...list].sort((a,b) => b.r - a.r);
-  const placed = [];
-  for(const f of order){
-    let x, y, ok = false;
-    for(let tries=0; tries<300 && !ok; tries++){
-      x = f.r+10 + Math.random()*(W_MULTI-2*(f.r+10));
-      y = f.r+10 + Math.random()*(H_MULTI-2*(f.r+10));
-      ok = placed.every(p => Math.hypot(p.x-x, p.y-y) >= p.r+f.r+14);
-    }
-    f.x = x; f.y = y;
-    placed.push(f);
-  }
-}
-function addPopupMulti(x,y,text,color){ mPopups.push({x,y,text,color,age:0}); }
-
-function stepFighterMulti(f, dt){
-  if(!f.alive){ f.fadeT += dt; return; }
-  f.vy += M_GRAVITY*dt;
-  f.x += f.vx*dt; f.y += f.vy*dt;
-  const x0=f.r+6, x1=W_MULTI-f.r-6, y0=f.r+6, y1=H_MULTI-f.r-6;
-  if(f.x<x0){ f.x=x0; f.vx=Math.abs(f.vx)*M_WALL_BOUNCE; }
-  if(f.x>x1){ f.x=x1; f.vx=-Math.abs(f.vx)*M_WALL_BOUNCE; }
-  if(f.y<y0){ f.y=y0; f.vy=Math.abs(f.vy)*M_WALL_BOUNCE; }
-  if(f.y>y1){ f.y=y1; f.vy=-Math.abs(f.vy)*M_WALL_BOUNCE; }
-}
-
-function resolveCollisionMulti(a, b){
-  if(!a.alive || !b.alive) return;
-  const dx=b.x-a.x, dy=b.y-a.y;
-  const dist=Math.hypot(dx,dy);
-  const minDist=a.r+b.r;
-  if(dist>=minDist){ a.contacts.delete(b); b.contacts.delete(a); return; }
-  if(dist===0) return;
-
-  const nx=dx/dist, ny=dy/dist;
-  const overlap=minDist-dist;
-  const ma=a.r*a.r, mb=b.r*b.r;
-  a.x -= nx*overlap*(mb/(ma+mb)); a.y -= ny*overlap*(mb/(ma+mb));
-  b.x += nx*overlap*(ma/(ma+mb)); b.y += ny*overlap*(ma/(ma+mb));
-
-  const va_n = a.vx*nx + a.vy*ny;
-  const vb_n = b.vx*nx + b.vy*ny;
-  a.vx += -va_n*nx - M_KICK*(mb/(ma+mb))*nx;
-  a.vy += -va_n*ny - M_KICK*(mb/(ma+mb))*ny;
-  b.vx += -vb_n*nx + M_KICK*(ma/(ma+mb))*nx;
-  b.vy += -vb_n*ny + M_KICK*(ma/(ma+mb))*ny;
-
-  // Boss Fight: minions bounce off each other but only damage the boss, not each other.
-  if(currentMode==='boss' && !a.isBoss && !b.isBoss) return;
-
-  if(a.contacts.has(b)) return;
-  a.contacts.add(b); b.contacts.add(a);
-  a.hitCount++; b.hitCount++;
-  const dmgA = nextDamageMulti(a), dmgB = nextDamageMulti(b);
-  b.hp = Math.max(0, b.hp-dmgA); a.hp = Math.max(0, a.hp-dmgB);
-  addPopupMulti(b.x,b.y,'-'+dmgA.toLocaleString('en-US'),a.color);
-  addPopupMulti(a.x,a.y,'-'+dmgB.toLocaleString('en-US'),b.color);
-  beep(a.isBoss||b.isBoss ? 160 : 260, 0.08, 0.1);
-  if(b.hp<=0 && b.alive) b.alive=false;
-  if(a.hp<=0 && a.alive) a.alive=false;
-}
-
-function updateMulti(dt){
-  if(!mStarted || mGameOver) return;
-  for(const f of mFighters) stepFighterMulti(f, dt);
-  for(let i=0;i<mFighters.length;i++){
-    for(let j=i+1;j<mFighters.length;j++) resolveCollisionMulti(mFighters[i], mFighters[j]);
-  }
-  for(let i=mPopups.length-1;i>=0;i--){ mPopups[i].age++; if(mPopups[i].age>36) mPopups.splice(i,1); }
-  const alive = mFighters.filter(f=>f.alive);
-  if(alive.length<=1 && !mGameOver){
-    mGameOver=true;
-    mWinner = alive[0] || null;
-    document.getElementById('statusLine').textContent = mWinner ? (mWinner.name+' wins the battle!') : 'Draw!';
-  }
-  updateHudMulti();
-}
-
-function drawMulti(){
-  ctx.setTransform(activeRenderScale,0,0,activeRenderScale,0,0);
-  ctx.fillStyle='#fdfaf2'; ctx.fillRect(0,0,W_MULTI,H_MULTI);
-  ctx.strokeStyle='#000'; ctx.lineWidth=2; ctx.strokeRect(1,1,W_MULTI-2,H_MULTI-2);
-  for(const f of mFighters){
-    if(!f.alive){
-      const a = Math.max(0, 1-f.fadeT/40);
-      if(a<=0) continue;
-      ctx.globalAlpha=a;
-    }
-    ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,Math.PI*2);
-    ctx.fillStyle=f.color; ctx.fill();
-    ctx.lineWidth=2; ctx.strokeStyle='#000'; ctx.stroke();
-    ctx.fillStyle='#fff'; ctx.font='900 '+Math.round(f.r*0.8)+'px Arial';
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(f.name.charAt(0), f.x, f.y+1);
-    ctx.globalAlpha=1;
-  }
-  for(const p of mPopups){
-    ctx.globalAlpha=Math.max(0,1-p.age/36);
-    ctx.fillStyle=p.color; ctx.font='bold 13px Arial'; ctx.textAlign='center';
-    ctx.fillText(p.text, p.x, p.y-p.age*0.6);
-    ctx.globalAlpha=1;
-  }
-  if(mGameOver && mWinner){
-    ctx.fillStyle='rgba(8,9,12,0.55)'; ctx.fillRect(0,H_MULTI/2-24,W_MULTI,48);
-    ctx.fillStyle=mWinner.color; ctx.font='900 20px Arial';
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(mWinner.name+' WINS', W_MULTI/2, H_MULTI/2);
-  }
-}
-
-function updateHudMulti(){
-  const hud = document.getElementById('hud');
-  hud.querySelectorAll('.hud-fill').forEach((el,i) => {
-    const f = mFighters[i]; if(!f) return;
-    el.style.width = Math.max(0,(f.hp/f.maxHp*100))+'%';
-    el.parentElement.parentElement.classList.toggle('dead', !f.alive);
-  });
-}
-function buildHudMulti(){
-  const hud = document.getElementById('hud');
-  hud.innerHTML = mFighters.map(f =>
-    '<div class="hud-row"><div class="hud-name">'+f.name+'</div>'+
-    '<div class="hud-track"><div class="hud-fill" style="width:100%;background:'+f.color+'"></div></div></div>'
-  ).join('');
-}
-
-function readFfaConfigs(){
-  return Array.from(document.querySelectorAll('#ffaList .fighter-row')).map(row => ({
-    name: row.querySelector('.f-name').value.trim().toUpperCase() || 'FIGHTER',
-    color: row.querySelector('.f-color').value,
-    hp: Math.max(50, parseInt(row.querySelector('.f-hp').value,10) || 500),
-    dmg: Math.max(1, parseInt(row.querySelector('.f-dmg').value,10) || 10),
-    growthKey: row.querySelector('.f-growth').value,
-    speed: 1, isBoss: false,
-  }));
-}
-function readBossConfigs(){
-  const boss = {
-    name: document.getElementById('bossName').value.trim().toUpperCase() || 'BOSS',
-    color: document.getElementById('bossColor').value,
-    hp: Math.max(500, parseInt(document.getElementById('bossHp').value,10) || 10000),
-    dmg: Math.max(1, parseInt(document.getElementById('bossDmg').value,10) || 50),
-    growthKey: document.getElementById('bossGrowth').value,
-    speed: 0.7, isBoss: true,
-  };
-  const count = parseInt(document.getElementById('swarmCount').value,10);
-  const swarmName = document.getElementById('swarmName').value.trim().toUpperCase() || 'MINION';
-  const swarm = [];
-  for(let i=1;i<=count;i++){
-    swarm.push({
-      name: swarmName+' '+i,
-      color: document.getElementById('swarmColor').value,
-      hp: Math.max(20, parseInt(document.getElementById('swarmHp').value,10) || 300),
-      dmg: Math.max(1, parseInt(document.getElementById('swarmDmg').value,10) || 10),
-      growthKey: document.getElementById('swarmGrowth').value,
-      speed: 1.2, isBoss: false,
-    });
-  }
-  return [boss, ...swarm];
-}
-
-function resetGameMulti(){
-  const configs = currentMode==='ffa' ? readFfaConfigs() : readBossConfigs();
-  mFighters = configs.map(makeFighterMulti);
-  placeFightersWithoutOverlap(mFighters);
-  mPopups=[]; mStarted=false; mGameOver=false; mWinner=null;
-  buildHudMulti();
-  document.getElementById('start-overlay').style.display='flex';
-  document.getElementById('start-overlay').textContent='Tap to start';
-  document.getElementById('statusLine').textContent = 'Configure your fighters, then tap the arena to begin.';
-}
-
-const FFA_COLORS = ['#ff3b5c','#22d3ee','#ffc94a','#7f77dd','#63c93a','#e094c9'];
-let ffaRowCount = 0;
-function addFfaRow(name, color){
-  ffaRowCount++;
-  const idx = document.querySelectorAll('#ffaList .fighter-row').length;
-  const row = document.createElement('div');
-  row.className='fighter-row';
-  row.innerHTML =
-    '<div class="fighter-row-head">'+
-      '<input type="color" class="f-color" value="'+(color||FFA_COLORS[idx%FFA_COLORS.length])+'">'+
-      '<input type="text" class="f-name" maxlength="14" value="'+(name||('FIGHTER '+ffaRowCount))+'">'+
-      '<button type="button" class="remove-row" title="Remove">\u00d7</button>'+
-    '</div>'+
-    '<div class="row-fields">'+
-      '<div class="field"><label>HP</label><input type="number" class="f-hp" value="800" min="50"></div>'+
-      '<div class="field"><label>Damage</label><input type="number" class="f-dmg" value="12" min="1"></div>'+
-      '<div class="field field-full"><label>Damage growth</label><select class="f-growth"></select></div>'+
-    '</div>';
-  document.getElementById('ffaList').appendChild(row);
-  populateGrowthSelect(row.querySelector('.f-growth'));
-  row.querySelector('.remove-row').addEventListener('click', () => {
-    if(document.querySelectorAll('#ffaList .fighter-row').length<=2) return;
-    row.remove();
-    document.getElementById('ffaAddBtn').style.display='block';
-  });
-  if(document.querySelectorAll('#ffaList .fighter-row').length>=6){
-    document.getElementById('ffaAddBtn').style.display='none';
-  }
-}
-document.getElementById('ffaAddBtn').addEventListener('click', () => {
-  addFfaRow();
-  if(document.querySelectorAll('#ffaList .fighter-row').length>=6){
-    document.getElementById('ffaAddBtn').style.display='none';
-  }
-});
-addFfaRow('BLAZE','#ff3b5c');
-addFfaRow('FROST','#22d3ee');
-
-populateGrowthSelect(document.getElementById('bossGrowth'));
-populateGrowthSelect(document.getElementById('swarmGrowth'));
-document.getElementById('swarmCount').addEventListener('input', function(){
-  document.getElementById('swarmCountVal').textContent = this.value;
-});
-
-document.getElementById('ffaRestartBtn').addEventListener('click', resetGame);
-document.getElementById('bossRestartBtn').addEventListener('click', resetGame);
-
-document.getElementById('start-overlay').addEventListener('click', () => {
-  if(currentMode !== 'duel' && !mStarted){
-    ensureAudio(); mStarted=true;
-    document.getElementById('start-overlay').style.display='none';
-    document.getElementById('statusLine').textContent = 'Battle in progress...';
-  }
-});
-
-/* ============ Mode switching ============ */
-document.querySelectorAll('#gameModeTabs .mode-tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('#gameModeTabs .mode-tab').forEach(t=>t.classList.toggle('active', t===tab));
-    currentMode = tab.dataset.mode;
-    document.getElementById('panel-duel').style.display = currentMode==='duel' ? 'block' : 'none';
-    document.getElementById('panel-ffa').style.display = currentMode==='ffa' ? 'block' : 'none';
-    document.getElementById('panel-boss').style.display = currentMode==='boss' ? 'block' : 'none';
-    document.getElementById('hud').style.display = currentMode==='duel' ? 'none' : 'flex';
-    setCanvasResolution(activeRenderScale);
-    resizeCanvas();
-    resetGame();
+document.querySelectorAll('.faq-q').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    btn.parentElement.classList.toggle('open');
   });
 });
 
-/* ============ Recording ============ */
-let mediaRecorder = null, recordedChunks = [], recordedMime = '';
-const recordBtn = document.getElementById('recordBtn');
-const recNote = document.getElementById('recNote');
-let ffmpegInstance = null;
-
-function canRecord(){ return typeof MediaRecorder !== 'undefined' && canvas.captureStream; }
-
-function pickMimeType(){
-  const candidates = [
-    'video/mp4;codecs=h264',
-    'video/mp4',
-    'video/webm;codecs=vp9',
-    'video/webm;codecs=vp8',
-    'video/webm',
-  ];
-  for(const type of candidates){
-    if(MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(type)) return type;
-  }
-  return '';
-}
-
-async function getFFmpeg(){
-  if(ffmpegInstance) return ffmpegInstance;
-  if(!window.FFmpeg) throw new Error('ffmpeg not loaded');
-  const { createFFmpeg } = window.FFmpeg;
-  ffmpegInstance = createFFmpeg({
-    log: false,
-    corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
-  });
-  await ffmpegInstance.load();
-  return ffmpegInstance;
-}
-
-async function convertWebmToMp4(webmBlob){
-  const { fetchFile } = window.FFmpeg;
-  const ffmpeg = await getFFmpeg();
-  ffmpeg.FS('writeFile', 'input.webm', await fetchFile(webmBlob));
-  await ffmpeg.run(
-    '-i', 'input.webm',
-    '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
-    '-r', '30', '-vsync', 'cfr',
-    '-c:a', 'aac', '-strict', '-2', '-b:a', '128k', '-ar', '44100', '-async', '1',
-    'output.mp4'
-  );
-  const data = ffmpeg.FS('readFile', 'output.mp4');
-  ffmpeg.FS('unlink', 'input.webm');
-  ffmpeg.FS('unlink', 'output.mp4');
-  return new Blob([data.buffer], { type: 'video/mp4' });
-}
-
-function downloadBlob(blob, filename){
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 4000);
-}
-
-recordBtn.addEventListener('click', () => {
-  if(!canRecord()){
-    recNote.textContent = 'Recording is not supported in this browser.';
-    return;
-  }
-  if(mediaRecorder && mediaRecorder.state === 'recording'){
-    mediaRecorder.stop();
-    return;
-  }
-  if(trialExpired()){
-    recNote.textContent = 'Your free trial has ended. Upgrade to Pro to keep recording.';
-    updateTrialStatus();
-    return;
-  }
-  if(clipLimitReached()){
-    recNote.textContent = 'You\'ve used all 7 free trial clips. Upgrade to Pro for unlimited clips.';
-    updateTrialStatus();
-    return;
-  }
-  ensureAudio();
-  setCanvasResolution(1080 / activeWH().w);
-  const videoStream = canvas.captureStream(30);
-  const audioTracks = audioDest ? audioDest.stream.getAudioTracks() : [];
-  const stream = new MediaStream([...videoStream.getVideoTracks(), ...audioTracks]);
-  recordedChunks = [];
-  recordedMime = pickMimeType();
-  try{
-    mediaRecorder = recordedMime ? new MediaRecorder(stream, { mimeType: recordedMime }) : new MediaRecorder(stream);
-  }catch(e){
-    mediaRecorder = new MediaRecorder(stream);
-    recordedMime = '';
-  }
-  mediaRecorder.ondataavailable = (e) => { if(e.data.size > 0) recordedChunks.push(e.data); };
-  mediaRecorder.onstop = async () => {
-    recordBtn.classList.remove('recording');
-    recordBtn.disabled = true;
-    recordBtn.textContent = 'Checking trial...';
-
-    const permission = await requestClipPermission();
-    if(!permission.allowed){
-      recordBtn.textContent = '● Record clip';
-      recordBtn.disabled = false;
-      setCanvasResolution(DISPLAY_RENDER_SCALE);
-      if(permission.reason === 'trial_expired'){
-        recNote.textContent = 'Your free trial has ended. Upgrade to Pro to keep recording.';
-      } else if(permission.reason === 'clip_limit_reached'){
-        recNote.textContent = 'You\'ve used all 7 free trial clips. Upgrade to Pro for unlimited clips.';
-      } else if(permission.reason === 'not_authenticated'){
-        recNote.textContent = 'Your session expired. Please log in again.';
-      } else {
-        recNote.textContent = 'Could not verify your trial status. Check your connection and try again.';
-      }
-      await fetchTrialStatus();
-      return;
-    }
-    if(typeof permission.daysLeft === 'number'){
-      trialInfo = { plan: permission.plan, daysLeft: permission.daysLeft, clipsUsed: permission.clipsUsed };
-      updateTrialStatus();
-    }
-
-    const isNativeMp4 = recordedMime.indexOf('mp4') !== -1;
-    const rawBlob = new Blob(recordedChunks, { type: isNativeMp4 ? 'video/mp4' : 'video/webm' });
-
-    if(isNativeMp4){
-      recordBtn.textContent = '● Record clip';
-      recordBtn.disabled = false;
-      setCanvasResolution(DISPLAY_RENDER_SCALE);
-      downloadBlob(rawBlob, 'clasharena-battle.mp4');
-      recNote.textContent = 'MP4 downloaded, ready to post.';
-      return;
-    }
-
-    recordBtn.textContent = 'Converting to MP4…';
-    recNote.textContent = 'Converting to MP4 in your browser, this can take a moment...';
-    try{
-      const mp4Blob = await convertWebmToMp4(rawBlob);
-      downloadBlob(mp4Blob, 'clasharena-battle.mp4');
-      recNote.textContent = 'MP4 downloaded, ready to post.';
-    }catch(err){
-      downloadBlob(rawBlob, 'clasharena-battle.webm');
-      recNote.textContent = 'MP4 conversion failed, downloaded as .webm instead. Convert it with any free converter if you need MP4.';
-    }finally{
-      recordBtn.textContent = '● Record clip';
-      recordBtn.disabled = false;
-      setCanvasResolution(DISPLAY_RENDER_SCALE);
-    }
-  };
-  mediaRecorder.start();
-  recordBtn.classList.add('recording');
-  recordBtn.textContent = '■ Stop & download';
-  recNote.textContent = 'Recording... battle will start automatically if it hasn\'t yet.';
-  if(!started) startGame();
-});
-
-/* ============ Supabase auth + server-verified free trial ============ */
+// ---------- Supabase auth ----------
 const SUPABASE_URL = 'https://wqujciipjjcqwqdwnguq.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxdWpjaWlwampjcXdxZHduZ3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NDkzNTAsImV4cCI6MjEwNTEyNTM1MH0.zGrSGjs5Gdlwy-yJieHuhL9PjMcdYDgtDMi5DUy3ECM';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const gateOverlay = document.getElementById('gateOverlay');
-const mainLayout = document.getElementById('mainLayout');
-const trialStatusEl = document.getElementById('trialStatus');
+const authModal   = document.getElementById('authModal');
+const modalForms  = document.getElementById('modalForms');
+const modalSuccess= document.getElementById('modalSuccess');
+const tabs        = document.querySelectorAll('.modal-tab');
+const panes       = document.querySelectorAll('.form-pane');
+const navAccount  = document.getElementById('navAccount');
+const navAccountBtn = document.getElementById('navAccountBtn');
+const navAccountDropdown = document.getElementById('navAccountDropdown');
+const navLoginBtn = document.getElementById('openLogin');
+const navSignupBtn= document.getElementById('openSignup');
+const navName     = document.getElementById('navName');
+const navAvatar   = document.getElementById('navAvatar');
 
-// Cached copy of the server's trial_status row. Only ever written from
-// fetchTrialStatus() — this file never re-derives days/clips locally,
-// that math (and the actual clip-count increment) lives server-side.
-let trialInfo = { plan: 'free', daysLeft: 3, clipsUsed: 0 };
-
-async function fetchTrialStatus(){
-  const { data, error } = await supabaseClient.from('trial_status').select('*').single();
-  if(error || !data){
-    console.error('Could not load trial status', error);
-    return;
-  }
-  trialInfo = { plan: data.plan, daysLeft: data.trial_days_left, clipsUsed: data.clips_used };
-  updateTrialStatus();
+function openModal(pane){
+  modalForms.style.display = 'block';
+  modalSuccess.style.display = 'none';
+  document.getElementById('su-error').style.display = 'none';
+  document.getElementById('li-error').style.display = 'none';
+  setActivePane(pane);
+  authModal.classList.add('open');
+}
+function closeModal(){ authModal.classList.remove('open'); }
+function setActivePane(pane){
+  tabs.forEach(t => t.classList.toggle('active', t.dataset.pane === pane));
+  panes.forEach(p => p.classList.toggle('active', p.id === 'pane-' + pane));
 }
 
-function trialExpired(){ return trialInfo.plan === 'free' && trialInfo.daysLeft <= 0; }
-function clipLimitReached(){ return trialInfo.plan === 'free' && trialInfo.clipsUsed >= TRIAL_CLIP_LIMIT_DISPLAY; }
-const TRIAL_CLIP_LIMIT_DISPLAY = 7; // must match TRIAL_CLIP_LIMIT in the record-clip Edge Function
+navSignupBtn.addEventListener('click', () => openModal('signup'));
+navLoginBtn.addEventListener('click', () => openModal('login'));
+document.querySelectorAll('.open-signup-trigger').forEach(el=>{
+  el.addEventListener('click', () => openModal('signup'));
+});
+document.getElementById('modalClose').addEventListener('click', closeModal);
+authModal.addEventListener('click', (e) => { if (e.target === authModal) closeModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+tabs.forEach(tab => tab.addEventListener('click', () => setActivePane(tab.dataset.pane)));
 
-function updateTrialStatus(){
-  trialStatusEl.style.display = 'flex';
-  document.getElementById('accountMenuWrap').style.display = 'block';
-  const manageBtn = document.getElementById('manageSubBtn');
-  const upgradeBtn = document.getElementById('upgradeBtn');
-  if(trialInfo.plan === 'pro'){
-    trialStatusEl.classList.remove('limit-reached');
-    trialStatusEl.textContent = 'Pro plan · unlimited clips';
-    manageBtn.style.display = 'block';
-    upgradeBtn.style.display = 'none';
-    return;
-  }
-  manageBtn.style.display = 'none';
-  upgradeBtn.style.display = 'block';
-  const expired = trialExpired();
-  const limitHit = clipLimitReached();
-  trialStatusEl.classList.toggle('limit-reached', expired || limitHit);
-  if(expired){
-    trialStatusEl.textContent = 'Free trial ended';
-  } else if(limitHit){
-    trialStatusEl.textContent = 'Clip limit reached (7/7)';
-  } else {
-    trialStatusEl.textContent = 'Free trial · Day ' + (3 - trialInfo.daysLeft + 1) + ' of 3 · ' + trialInfo.clipsUsed + '/7 clips used';
-  }
-}
+navAccountBtn.addEventListener('click', () => navAccountDropdown.classList.toggle('open'));
+document.addEventListener('click', (e) => {
+  if(!navAccount.contains(e.target)) navAccountDropdown.classList.remove('open');
+});
 
-async function unlockBuilder(){
-  gateOverlay.style.display = 'none';
-  mainLayout.style.display = 'grid';
-  resizeCanvas();
-  await fetchTrialStatus();
-}
-
-// ---------- Stripe: checkout, billing portal, account menu ----------
 async function authedFetch(path, body){
   const { data: sessionData } = await supabaseClient.auth.getSession();
   const token = sessionData && sessionData.session && sessionData.session.access_token;
@@ -1551,22 +664,7 @@ async function authedFetch(path, body){
   });
   return await resp.json();
 }
-
-async function startCheckout(){
-  const base = window.location.href.split('?')[0];
-  try{
-    const result = await authedFetch('/functions/v1/create-checkout-session', {
-      successUrl: base + '?checkout=success',
-      cancelUrl: base + '?checkout=cancelled',
-    });
-    if(result.url){ window.location.href = result.url; }
-    else { alert('Could not start checkout: ' + (result.error || 'unknown error')); }
-  }catch(e){
-    alert('Could not start checkout. Please log in again.');
-  }
-}
-
-async function openBillingPortal(){
+document.getElementById('manageSubBtn').addEventListener('click', async () => {
   const base = window.location.href.split('?')[0];
   try{
     const result = await authedFetch('/functions/v1/create-portal-session', { returnUrl: base });
@@ -1575,104 +673,93 @@ async function openBillingPortal(){
   }catch(e){
     alert('Could not open billing portal. Please log in again.');
   }
-}
-
-const accountBtn = document.getElementById('accountBtn');
-const accountDropdown = document.getElementById('accountDropdown');
-accountBtn.addEventListener('click', () => accountDropdown.classList.toggle('open'));
-document.addEventListener('click', (e) => {
-  if(!document.getElementById('accountMenuWrap').contains(e.target)){
-    accountDropdown.classList.remove('open');
-  }
-});
-document.getElementById('upgradeBtn').addEventListener('click', startCheckout);
-document.getElementById('manageSubBtn').addEventListener('click', openBillingPortal);
-document.getElementById('logoutBtn').addEventListener('click', async () => {
-  await supabaseClient.auth.signOut();
-  window.location.reload();
 });
 
-// If we just came back from a successful checkout, refresh trial status
-// (the webhook flips the plan server-side, this just re-reads it).
-if(window.location.search.includes('checkout=success')){
-  setTimeout(fetchTrialStatus, 2000);
-}
-
-// Calls the server-side record-clip Edge Function, which is the ONLY thing
-// allowed to write to the clips table. It re-checks trial/day limits itself
-// (never trust the client), and returns whether this export is allowed.
-async function requestClipPermission(){
-  const { data: sessionData } = await supabaseClient.auth.getSession();
-  const token = sessionData && sessionData.session && sessionData.session.access_token;
-  if(!token) return { allowed: false, reason: 'not_authenticated' };
+async function refreshManageSubVisibility(){
+  const manageBtn = document.getElementById('manageSubBtn');
   try{
-    const resp = await fetch(SUPABASE_URL + '/functions/v1/record-clip', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + token,
-        'apikey': SUPABASE_ANON_KEY,
-        'Content-Type': 'application/json',
-      },
-    });
-    return await resp.json();
+    const { data, error } = await supabaseClient.from('trial_status').select('plan').single();
+    manageBtn.style.display = (!error && data && data.plan === 'pro') ? 'block' : 'none';
   }catch(e){
-    return { allowed: false, reason: 'network_error' };
+    manageBtn.style.display = 'none';
   }
 }
 
-/* Gate tab switching */
-document.querySelectorAll('#gateOverlay .modal-tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('#gateOverlay .modal-tab').forEach(t => t.classList.toggle('active', t === tab));
-    document.querySelectorAll('#gateOverlay .form-pane').forEach(p => p.classList.toggle('active', p.id === 'pane-' + tab.dataset.pane));
-  });
+function showLoggedIn(name){
+  navAccount.style.display = 'inline-block';
+  navLoginBtn.style.display = 'none';
+  navSignupBtn.style.display = 'none';
+  navName.textContent = name;
+  navAvatar.textContent = name.trim().charAt(0).toUpperCase() || '?';
+  refreshManageSubVisibility();
+}
+function showLoggedOut(){
+  navAccount.style.display = 'none';
+  navAccountDropdown.classList.remove('open');
+  navLoginBtn.style.display = 'inline-block';
+  navSignupBtn.style.display = 'inline-block';
+}
+
+// Restore session on page load (e.g. coming back from the simulator)
+supabaseClient.auth.getSession().then(({ data }) => {
+  const user = data && data.session && data.session.user;
+  if(user){
+    showLoggedIn((user.user_metadata && user.user_metadata.name) || user.email.split('@')[0]);
+  }
 });
 
-document.getElementById('gateSignupForm').addEventListener('submit', async (e) => {
+document.getElementById('signupForm').addEventListener('submit', async function(e){
   e.preventDefault();
-  const name = document.getElementById('gsu-name').value.trim();
-  const email = document.getElementById('gsu-email').value.trim();
-  const pass = document.getElementById('gsu-password').value;
-  const err = document.getElementById('gsu-error');
+  const name = document.getElementById('su-name').value.trim();
+  const email = document.getElementById('su-email').value.trim();
+  const pass = document.getElementById('su-password').value;
+  const err = document.getElementById('su-error');
   if(!name || !email || pass.length < 8){
     err.textContent = 'Please fill in every field (password: 8+ characters).';
     err.style.display = 'block';
     return;
   }
-  const submitBtn = e.target.querySelector('.modal-submit');
-  submitBtn.disabled = true; submitBtn.textContent = 'Starting trial...';
+  const submitBtn = this.querySelector('.modal-submit');
+  submitBtn.disabled = true; submitBtn.textContent = 'Creating account...';
+  const refCode = new URLSearchParams(window.location.search).get('ref');
   const { data, error } = await supabaseClient.auth.signUp({
-    email, password: pass, options: { data: { name } }
+    email, password: pass, options: { data: { name, referred_by: refCode || null } }
   });
-  submitBtn.disabled = false; submitBtn.textContent = 'Start Free Trial';
+  submitBtn.disabled = false; submitBtn.textContent = 'Create Account';
   if(error){
     err.textContent = error.message;
     err.style.display = 'block';
     return;
   }
   err.style.display = 'none';
+  modalForms.style.display = 'none';
+  modalSuccess.style.display = 'block';
   if(data.session){
-    unlockBuilder();
+    // No email confirmation required — trial starts immediately, straight into the builder.
+    document.getElementById('successHeading').textContent = "You're in, " + name.split(' ')[0];
+    document.getElementById('successSub').textContent = "Your free trial has started. Taking you to the builder...";
+    showLoggedIn(name);
+    setTimeout(() => { window.location.href = 'simulator.html'; }, 1200);
   } else {
-    err.style.color = 'var(--gold)';
-    err.textContent = 'Check your inbox to confirm your email, then log in.';
-    err.style.display = 'block';
+    // Email confirmation required before the session becomes active.
+    document.getElementById('successHeading').textContent = "Check your inbox";
+    document.getElementById('successSub').textContent = "Confirm your email, then log in to start your free trial.";
   }
 });
 
-document.getElementById('gateLoginForm').addEventListener('submit', async (e) => {
+document.getElementById('loginForm').addEventListener('submit', async function(e){
   e.preventDefault();
-  const email = document.getElementById('gli-email').value.trim();
-  const pass = document.getElementById('gli-password').value;
-  const err = document.getElementById('gli-error');
+  const email = document.getElementById('li-email').value.trim();
+  const pass = document.getElementById('li-password').value;
+  const err = document.getElementById('li-error');
   if(!email || !pass){
     err.textContent = 'Please enter your email and password.';
     err.style.display = 'block';
     return;
   }
-  const submitBtn = e.target.querySelector('.modal-submit');
+  const submitBtn = this.querySelector('.modal-submit');
   submitBtn.disabled = true; submitBtn.textContent = 'Logging in...';
-  const { error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
   submitBtn.disabled = false; submitBtn.textContent = 'Log In';
   if(error){
     err.textContent = error.message;
@@ -1680,18 +767,62 @@ document.getElementById('gateLoginForm').addEventListener('submit', async (e) =>
     return;
   }
   err.style.display = 'none';
-  unlockBuilder();
+  const name = (data.user.user_metadata && data.user.user_metadata.name) || email.split('@')[0];
+  modalForms.style.display = 'none';
+  document.getElementById('successHeading').textContent = "Welcome back";
+  document.getElementById('successSub').textContent = "Taking you to the builder...";
+  modalSuccess.style.display = 'block';
+  showLoggedIn(name);
+  setTimeout(() => { window.location.href = 'simulator.html'; }, 1000);
 });
 
-// If a session already exists (came from index.html, or a reload), skip the gate.
-supabaseClient.auth.getSession().then(({ data }) => {
-  if(data && data.session){ unlockBuilder(); }
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await supabaseClient.auth.signOut();
+  showLoggedOut();
 });
 
-/* ============ Init ============ */
-resizeCanvas();
-resetGame();
-requestAnimationFrame(loop);
+document.getElementById('contactForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  const err = document.getElementById('contact-error');
+  const success = document.getElementById('contact-success');
+  const btn = document.getElementById('contactSubmitBtn');
+  err.style.display = 'none';
+  success.style.display = 'none';
+
+  const name = document.getElementById('contact-name').value.trim();
+  const email = document.getElementById('contact-email').value.trim();
+  const message = document.getElementById('contact-message').value.trim();
+  if(!name || !email || !message){
+    err.textContent = 'Please fill in every field.';
+    err.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+  try{
+    const resp = await fetch(this.action, {
+      method: 'POST',
+      headers: { 'Accept': 'application/json' },
+      body: new FormData(this),
+    });
+    if(resp.ok){
+      success.style.display = 'block';
+      this.reset();
+    } else {
+      err.textContent = 'Something went wrong. Please try again.';
+      err.style.display = 'block';
+    }
+  }catch(e2){
+    err.textContent = 'Something went wrong. Please try again.';
+    err.style.display = 'block';
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Send message';
+  }
+});
 </script>
+
+
 </body>
 </html>
