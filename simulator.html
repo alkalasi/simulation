@@ -1597,7 +1597,8 @@ document.getElementById('referralBtn').addEventListener('click', async () => {
     alert('Could not load your referral link. Please try again.');
     return;
   }
-  const link = 'https://' + window.location.hostname + '/index.html?ref=' + data.referral_code;
+  const basePath = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
+  const link = basePath + 'index.html?ref=' + data.referral_code;
   try{
     await navigator.clipboard.writeText(link);
     alert('Referral link copied!\n\n' + link + '\n\nWhen someone signs up with it and goes Pro, you get 50% off your next payment.');
