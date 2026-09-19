@@ -100,6 +100,9 @@
   }
   .trial-status a{color:var(--gold);font-weight:700;text-decoration:none;}
   .trial-status.limit-reached{color:#FF3B5C;border-color:#4a1420;}
+  .mode-tabs{display:flex;gap:4px;background:var(--bg-raised-2);border-radius:8px;padding:4px;margin-left:16px;}
+  .mode-tab{padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;background:none;border:none;font-family:'Inter',sans-serif;}
+  .mode-tab.active{background:var(--bg-raised);color:var(--text);}
   .nav-right{display:flex;align-items:center;gap:12px;}
   .account-menu-wrap{position:relative;}
   .account-btn{
@@ -130,6 +133,32 @@
   }
   .sound-status{font-size:12px;color:var(--muted);margin-top:5px;}
   .sound-status.error{color:#FF3B5C;}
+  .fighter-row{background:var(--bg-raised-2);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;}
+  .fighter-row-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .fighter-row-head input[type="color"]{width:26px;height:26px;border-radius:6px;border:1px solid var(--line);background:none;padding:0;cursor:pointer;}
+  .fighter-row-head input[type="text"]{flex:1;padding:7px 9px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:13px;font-family:'Inter',sans-serif;}
+  .fighter-row-head button{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:2px 6px;}
+  .fighter-row-head button:hover{color:#FF3B5C;}
+  .row-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .row-fields .field label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;}
+  .row-fields .field input[type="number"],.row-fields .field select{
+    width:100%;padding:7px 8px;border-radius:6px;border:1px solid var(--line);
+    background:var(--bg);color:var(--text);font-size:12.5px;font-family:'Inter',sans-serif;
+  }
+  .field-full{grid-column:1 / -1;}
+  .add-btn{
+    width:100%;padding:10px 0;border-radius:8px;border:1px dashed var(--line);
+    background:none;color:var(--muted);font-size:13px;cursor:pointer;margin-top:4px;font-family:'Inter',sans-serif;
+  }
+  .add-btn:hover{border-color:var(--muted);color:var(--text);}
+  .swarm-count{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .swarm-count input[type="range"]{flex:1;accent-color:var(--gold);}
+  .hud{width:100%;display:flex;flex-direction:column;gap:6px;}
+  .hud-row{display:flex;align-items:center;gap:8px;font-size:12px;}
+  .hud-name{width:80px;color:#3a3428;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .hud-track{flex:1;height:8px;border-radius:5px;background:rgba(0,0,0,0.15);overflow:hidden;}
+  .hud-fill{height:100%;border-radius:5px;transition:width .15s;}
+  .hud-row.dead .hud-name,.hud-row.dead .hud-track{opacity:0.35;}
   .sound-status .clear-sound{color:var(--gold);cursor:pointer;text-decoration:underline;margin-left:6px;background:none;border:none;font-size:12px;font-family:'Inter',sans-serif;}
   .mute-row{
     display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);
@@ -183,6 +212,11 @@
 
 <nav>
   <div class="logo"><span class="dot-a"></span><span class="dot-b"></span>&nbsp;ClashArena</div>
+  <div class="mode-tabs" id="gameModeTabs">
+    <button class="mode-tab active" data-mode="duel">Duel</button>
+    <button class="mode-tab" data-mode="ffa">Free-for-all</button>
+    <button class="mode-tab" data-mode="boss">Boss Fight</button>
+  </div>
   <div class="nav-right">
     <div class="trial-status" id="trialStatus" style="display:none;"></div>
     <div class="account-menu-wrap" id="accountMenuWrap" style="display:none;">
@@ -246,8 +280,8 @@
 
 <div class="layout" id="mainLayout" style="display:none;">
 
-  <!-- CONTROLS -->
-  <div class="panel">
+  <!-- CONTROLS: DUEL -->
+  <div class="panel" id="panel-duel">
     <h2>Battle Builder</h2>
     <p class="sub">Set up both fighters, then start the battle.</p>
 
@@ -391,8 +425,56 @@
       <button class="btn btn-primary" id="restartBtn">Restart Battle</button>
       <button class="btn btn-ghost" id="randomBtn">Randomize</button>
     </div>
-    <button class="btn-record" id="recordBtn">● Record clip</button>
-    <p class="rec-note" id="recNote">Records the battle and downloads it as an MP4, ready for TikTok.</p>
+  </div>
+
+  <!-- CONTROLS: FREE-FOR-ALL -->
+  <div class="panel" id="panel-ffa" style="display:none;">
+    <h2>Free-for-all</h2>
+    <p class="sub">2 to 6 balls, one shared arena. Last one standing wins.</p>
+    <div id="ffaList"></div>
+    <button class="add-btn" id="ffaAddBtn">+ Add fighter</button>
+    <div class="panel-actions">
+      <button class="btn btn-primary" id="ffaRestartBtn">Restart Battle</button>
+    </div>
+  </div>
+
+  <!-- CONTROLS: BOSS FIGHT -->
+  <div class="panel" id="panel-boss" style="display:none;">
+    <h2>Boss Fight</h2>
+    <p class="sub">One oversized boss against a swarm of small balls. Minions don't damage each other.</p>
+
+    <div class="fighter-row">
+      <div class="fighter-row-head">
+        <input type="color" id="bossColor" value="#ff3b5c">
+        <input type="text" id="bossName" value="TITAN" maxlength="14">
+      </div>
+      <div class="row-fields">
+        <div class="field"><label>HP</label><input type="number" id="bossHp" value="12000" min="500"></div>
+        <div class="field"><label>Damage</label><input type="number" id="bossDmg" value="60" min="1"></div>
+        <div class="field field-full"><label>Damage growth</label><select id="bossGrowth"></select></div>
+      </div>
+    </div>
+
+    <div class="fighter-row">
+      <div class="fighter-row-head">
+        <input type="color" id="swarmColor" value="#22d3ee">
+        <input type="text" id="swarmName" value="MINION" maxlength="14">
+      </div>
+      <div class="row-fields">
+        <div class="field"><label>HP each</label><input type="number" id="swarmHp" value="400" min="50"></div>
+        <div class="field"><label>Damage each</label><input type="number" id="swarmDmg" value="15" min="1"></div>
+        <div class="field field-full"><label>Damage growth</label><select id="swarmGrowth"></select></div>
+      </div>
+    </div>
+
+    <div class="swarm-count">
+      <label style="font-size:12.5px;color:var(--muted);white-space:nowrap;">Swarm size <span id="swarmCountVal">4</span></label>
+      <input type="range" id="swarmCount" min="2" max="15" value="4">
+    </div>
+
+    <div class="panel-actions">
+      <button class="btn btn-primary" id="bossRestartBtn">Restart Battle</button>
+    </div>
   </div>
 
   <!-- CANVAS -->
@@ -401,7 +483,10 @@
       <canvas id="c"></canvas>
       <div id="start-overlay">Tap to start</div>
     </div>
+    <div class="hud" id="hud" style="display:none;"></div>
     <p class="status-line" id="statusLine">Configure your fighters, then tap the arena to begin.</p>
+    <button class="btn-record" id="recordBtn">● Record clip</button>
+    <p class="rec-note" id="recNote">Records the battle and downloads it as an MP4, ready for TikTok.</p>
   </div>
 
 </div>
@@ -432,22 +517,28 @@ const BOT_BAR_Y1 = BOT_ARENA_Y1 + BAR_H * TIERS;
 const BOT_CHECKER_Y0 = BOT_BAR_Y1, BOT_CHECKER_Y1 = BOT_CHECKER_Y0 + CHECKER_H;
 
 const H = BOT_CHECKER_Y1;
+const W_MULTI = 440, H_MULTI = 460; // logical arena size for Free-for-all / Boss Fight
 const EXPORT_RENDER_SCALE = 1080 / W; // used only while actually recording a clip
 const DISPLAY_RENDER_SCALE = Math.min(2, window.devicePixelRatio || 1); // crisp but cheap during normal play
 let activeRenderScale = DISPLAY_RENDER_SCALE;
 
+function activeWH(){
+  return currentMode === 'duel' ? { w: W, h: H } : { w: W_MULTI, h: H_MULTI };
+}
 function setCanvasResolution(scale){
   activeRenderScale = scale;
-  canvas.width = Math.round(W * scale);
-  canvas.height = Math.round(H * scale);
+  const { w, h } = activeWH();
+  canvas.width = Math.round(w * scale);
+  canvas.height = Math.round(h * scale);
 }
 setCanvasResolution(DISPLAY_RENDER_SCALE);
 
 function resizeCanvas(){
   const wrap = document.getElementById('canvas-wrap');
   const availW = Math.min(wrap.clientWidth, 460);
+  const { w, h } = activeWH();
   canvas.style.width = availW + 'px';
-  canvas.style.height = (availW * H / W) + 'px';
+  canvas.style.height = (availW * h / w) + 'px';
 }
 window.addEventListener('resize', resizeCanvas);
 
@@ -698,7 +789,7 @@ function nextDamage(fighter){
 
 function addPopup(x,y,text,color){ popups.push({x,y,text,color,age:0}); }
 
-function resetGame(){
+function resetGameDuel(){
   cfg = readConfig();
   top_ = makeFighter(cfg.A, TOP_ARENA_Y0, TOP_ARENA_Y1); top_.key = 'A';
   bot_ = makeFighter(cfg.B, BOT_ARENA_Y0, BOT_ARENA_Y1); bot_.key = 'B';
@@ -767,7 +858,7 @@ function stepFighter(f, dt){
   }
 }
 
-function update(dt){
+function updateDuel(dt){
   if(!started || gameOver) return;
   stepFighter(top_, dt);
   stepFighter(bot_, dt);
@@ -834,7 +925,7 @@ function drawPopups(f){
   }
 }
 
-function draw(){
+function drawDuel(){
   ctx.setTransform(activeRenderScale, 0, 0, activeRenderScale, 0, 0);
   ctx.clearRect(0,0,W,H);
   ctx.fillStyle = '#e9ddc4'; ctx.fillRect(0,0,W,H);
@@ -872,14 +963,24 @@ function draw(){
 }
 
 let lastFrameTime = null;
+let currentMode = 'duel'; // 'duel' | 'ffa' | 'boss'
 function loop(timestamp){
   if(lastFrameTime === null) lastFrameTime = timestamp;
   let dt = (timestamp - lastFrameTime) / (1000 / 60); // normalized: 1.0 == one 60fps frame's worth of time
   lastFrameTime = timestamp;
   dt = Math.min(Math.max(dt, 0), 3); // clamp so a stall (e.g. tab switch) can't make the ball tunnel through the floor
-  update(dt);
-  draw();
+  if(currentMode === 'duel'){
+    updateDuel(dt);
+    drawDuel();
+  } else {
+    updateMulti(dt);
+    drawMulti();
+  }
   requestAnimationFrame(loop);
+}
+function resetGame(){
+  if(currentMode === 'duel') resetGameDuel();
+  else resetGameMulti();
 }
 
 /* ============ Controls wiring ============ */
@@ -906,6 +1007,314 @@ document.getElementById('randomBtn').addEventListener('click', () => {
 /* Restart automatically whenever a config field changes, before the battle starts */
 ['nameA','nameB','colorA','colorB','hpA1','hpA2','hpA3','hpB1','hpB2','hpB3','dmgA','dmgB','growthA','growthB','speedA','speedB'].forEach(id => {
   document.getElementById(id).addEventListener('change', () => { if(!started) resetGame(); });
+});
+
+/* ============ MULTI-BALL ENGINE (Free-for-all + Boss Fight) ============ */
+const GROWTH_OPTIONS = [
+  ['fibonacci','Fibonacci (1, 1, 2, 3, 5, 8, ...)'],
+  ['factorial','Factorial (1, 2, 6, 24, 120, ...)'],
+  ['squares','Squares (1, 4, 9, 16, 25, ...)'],
+  ['catalan','Catalan numbers (1, 1, 2, 5, 14, ...)'],
+  ['lucas','Lucas numbers (2, 1, 3, 4, 7, ...)'],
+  ['tribonacci','Tribonacci (1, 1, 2, 4, 7, ...)'],
+  ['double','Doubling (\u00d72 per hit)'],
+  ['triple','Tripling (\u00d73 per hit)'],
+  ['base18','\u00d71.8 per hit'],
+  ['plus20pct','+20% per hit'],
+  ['plus10pct','+10% per hit'],
+  ['none','None \u2014 same damage every hit'],
+  ['add1','+1 per hit'],
+  ['add2','+2 per hit'],
+  ['add10','+10 per hit'],
+  ['add100','+100 per hit'],
+  ['triangular','Triangular \u2014 grows one more each step'],
+];
+function populateGrowthSelect(sel){
+  sel.innerHTML = GROWTH_OPTIONS.map(([v,l]) => '<option value="'+v+'">'+l+'</option>').join('');
+  sel.value = 'double';
+}
+function nextDamageMulti(f){
+  const n = f.hitCount + 1;
+  const base = f.dmg;
+  let val;
+  switch(f.growthKey){
+    case 'fibonacci':  val = base*seqFibonacci(n)/seqFibonacci(1); break;
+    case 'factorial':  val = base*seqFactorial(n)/seqFactorial(1); break;
+    case 'squares':    val = base*seqSquares(n)/seqSquares(1); break;
+    case 'catalan':    val = base*seqCatalan(n)/seqCatalan(1); break;
+    case 'lucas':      val = base*seqLucas(n)/seqLucas(1); break;
+    case 'tribonacci': val = base*seqTribonacci(n)/seqTribonacci(1); break;
+    case 'double':     val = base*Math.pow(2,n-1); break;
+    case 'triple':     val = base*Math.pow(3,n-1); break;
+    case 'base18':     val = base*Math.pow(1.8,n-1); break;
+    case 'plus20pct':  val = base*Math.pow(1.2,n-1); break;
+    case 'plus10pct':  val = base*Math.pow(1.1,n-1); break;
+    case 'add1':       val = base+(n-1)*1; break;
+    case 'add2':       val = base+(n-1)*2; break;
+    case 'add10':      val = base+(n-1)*10; break;
+    case 'add100':     val = base+(n-1)*100; break;
+    case 'triangular': val = base+(n-1)*n/2; break;
+    case 'none': default: val = base; break;
+  }
+  return Math.max(1, Math.round(clampVal(val)));
+}
+
+const M_GRAVITY = 0.22, M_WALL_BOUNCE = 0.85, M_KICK = 6.5;
+let mFighters = [], mPopups = [], mStarted=false, mGameOver=false, mWinner=null;
+
+function makeFighterMulti(conf){
+  const r = conf.isBoss ? 42 : 16;
+  const angle = Math.random()*Math.PI*2;
+  const spd = 2.4*conf.speed;
+  return {
+    name: conf.name, color: conf.color, maxHp: conf.hp, hp: conf.hp,
+    dmg: conf.dmg, growthKey: conf.growthKey, speed: conf.speed, r,
+    isBoss: !!conf.isBoss,
+    x: 0, y: 0,
+    vx: Math.cos(angle)*spd, vy: Math.sin(angle)*spd,
+    hitCount: 0, alive: true, fadeT: 0, contacts: new Set(),
+  };
+}
+function placeFightersWithoutOverlap(list){
+  const order = [...list].sort((a,b) => b.r - a.r);
+  const placed = [];
+  for(const f of order){
+    let x, y, ok = false;
+    for(let tries=0; tries<300 && !ok; tries++){
+      x = f.r+10 + Math.random()*(W_MULTI-2*(f.r+10));
+      y = f.r+10 + Math.random()*(H_MULTI-2*(f.r+10));
+      ok = placed.every(p => Math.hypot(p.x-x, p.y-y) >= p.r+f.r+14);
+    }
+    f.x = x; f.y = y;
+    placed.push(f);
+  }
+}
+function addPopupMulti(x,y,text,color){ mPopups.push({x,y,text,color,age:0}); }
+
+function stepFighterMulti(f, dt){
+  if(!f.alive){ f.fadeT += dt; return; }
+  f.vy += M_GRAVITY*dt;
+  f.x += f.vx*dt; f.y += f.vy*dt;
+  const x0=f.r+6, x1=W_MULTI-f.r-6, y0=f.r+6, y1=H_MULTI-f.r-6;
+  if(f.x<x0){ f.x=x0; f.vx=Math.abs(f.vx)*M_WALL_BOUNCE; }
+  if(f.x>x1){ f.x=x1; f.vx=-Math.abs(f.vx)*M_WALL_BOUNCE; }
+  if(f.y<y0){ f.y=y0; f.vy=Math.abs(f.vy)*M_WALL_BOUNCE; }
+  if(f.y>y1){ f.y=y1; f.vy=-Math.max(8,Math.abs(f.vy))*1.02; }
+}
+
+function resolveCollisionMulti(a, b){
+  if(!a.alive || !b.alive) return;
+  const dx=b.x-a.x, dy=b.y-a.y;
+  const dist=Math.hypot(dx,dy);
+  const minDist=a.r+b.r;
+  if(dist>=minDist){ a.contacts.delete(b); b.contacts.delete(a); return; }
+  if(dist===0) return;
+
+  const nx=dx/dist, ny=dy/dist;
+  const overlap=minDist-dist;
+  const ma=a.r*a.r, mb=b.r*b.r;
+  a.x -= nx*overlap*(mb/(ma+mb)); a.y -= ny*overlap*(mb/(ma+mb));
+  b.x += nx*overlap*(ma/(ma+mb)); b.y += ny*overlap*(ma/(ma+mb));
+
+  const va_n = a.vx*nx + a.vy*ny;
+  const vb_n = b.vx*nx + b.vy*ny;
+  a.vx += -va_n*nx - M_KICK*(mb/(ma+mb))*nx;
+  a.vy += -va_n*ny - M_KICK*(mb/(ma+mb))*ny;
+  b.vx += -vb_n*nx + M_KICK*(ma/(ma+mb))*nx;
+  b.vy += -vb_n*ny + M_KICK*(ma/(ma+mb))*ny;
+
+  // Boss Fight: minions bounce off each other but only damage the boss, not each other.
+  if(currentMode==='boss' && !a.isBoss && !b.isBoss) return;
+
+  if(a.contacts.has(b)) return;
+  a.contacts.add(b); b.contacts.add(a);
+  a.hitCount++; b.hitCount++;
+  const dmgA = nextDamageMulti(a), dmgB = nextDamageMulti(b);
+  b.hp = Math.max(0, b.hp-dmgA); a.hp = Math.max(0, a.hp-dmgB);
+  addPopupMulti(b.x,b.y,'-'+dmgA.toLocaleString('en-US'),a.color);
+  addPopupMulti(a.x,a.y,'-'+dmgB.toLocaleString('en-US'),b.color);
+  beep(a.isBoss||b.isBoss ? 160 : 260, 0.08, 0.1);
+  if(b.hp<=0 && b.alive) b.alive=false;
+  if(a.hp<=0 && a.alive) a.alive=false;
+}
+
+function updateMulti(dt){
+  if(!mStarted || mGameOver) return;
+  for(const f of mFighters) stepFighterMulti(f, dt);
+  for(let i=0;i<mFighters.length;i++){
+    for(let j=i+1;j<mFighters.length;j++) resolveCollisionMulti(mFighters[i], mFighters[j]);
+  }
+  for(let i=mPopups.length-1;i>=0;i--){ mPopups[i].age++; if(mPopups[i].age>36) mPopups.splice(i,1); }
+  const alive = mFighters.filter(f=>f.alive);
+  if(alive.length<=1 && !mGameOver){
+    mGameOver=true;
+    mWinner = alive[0] || null;
+    document.getElementById('statusLine').textContent = mWinner ? (mWinner.name+' wins the battle!') : 'Draw!';
+  }
+  updateHudMulti();
+}
+
+function drawMulti(){
+  ctx.setTransform(activeRenderScale,0,0,activeRenderScale,0,0);
+  ctx.fillStyle='#fdfaf2'; ctx.fillRect(0,0,W_MULTI,H_MULTI);
+  ctx.strokeStyle='#000'; ctx.lineWidth=2; ctx.strokeRect(1,1,W_MULTI-2,H_MULTI-2);
+  for(const f of mFighters){
+    if(!f.alive){
+      const a = Math.max(0, 1-f.fadeT/40);
+      if(a<=0) continue;
+      ctx.globalAlpha=a;
+    }
+    ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,Math.PI*2);
+    ctx.fillStyle=f.color; ctx.fill();
+    ctx.lineWidth=2; ctx.strokeStyle='#000'; ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.font='900 '+Math.round(f.r*0.8)+'px Arial';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(f.name.charAt(0), f.x, f.y+1);
+    ctx.globalAlpha=1;
+  }
+  for(const p of mPopups){
+    ctx.globalAlpha=Math.max(0,1-p.age/36);
+    ctx.fillStyle=p.color; ctx.font='bold 13px Arial'; ctx.textAlign='center';
+    ctx.fillText(p.text, p.x, p.y-p.age*0.6);
+    ctx.globalAlpha=1;
+  }
+  if(mGameOver && mWinner){
+    ctx.fillStyle='rgba(8,9,12,0.55)'; ctx.fillRect(0,H_MULTI/2-24,W_MULTI,48);
+    ctx.fillStyle=mWinner.color; ctx.font='900 20px Arial';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(mWinner.name+' WINS', W_MULTI/2, H_MULTI/2);
+  }
+}
+
+function updateHudMulti(){
+  const hud = document.getElementById('hud');
+  hud.querySelectorAll('.hud-fill').forEach((el,i) => {
+    const f = mFighters[i]; if(!f) return;
+    el.style.width = Math.max(0,(f.hp/f.maxHp*100))+'%';
+    el.parentElement.parentElement.classList.toggle('dead', !f.alive);
+  });
+}
+function buildHudMulti(){
+  const hud = document.getElementById('hud');
+  hud.innerHTML = mFighters.map(f =>
+    '<div class="hud-row"><div class="hud-name">'+f.name+'</div>'+
+    '<div class="hud-track"><div class="hud-fill" style="width:100%;background:'+f.color+'"></div></div></div>'
+  ).join('');
+}
+
+function readFfaConfigs(){
+  return Array.from(document.querySelectorAll('#ffaList .fighter-row')).map(row => ({
+    name: row.querySelector('.f-name').value.trim().toUpperCase() || 'FIGHTER',
+    color: row.querySelector('.f-color').value,
+    hp: Math.max(50, parseInt(row.querySelector('.f-hp').value,10) || 500),
+    dmg: Math.max(1, parseInt(row.querySelector('.f-dmg').value,10) || 10),
+    growthKey: row.querySelector('.f-growth').value,
+    speed: 1, isBoss: false,
+  }));
+}
+function readBossConfigs(){
+  const boss = {
+    name: document.getElementById('bossName').value.trim().toUpperCase() || 'BOSS',
+    color: document.getElementById('bossColor').value,
+    hp: Math.max(500, parseInt(document.getElementById('bossHp').value,10) || 10000),
+    dmg: Math.max(1, parseInt(document.getElementById('bossDmg').value,10) || 50),
+    growthKey: document.getElementById('bossGrowth').value,
+    speed: 0.7, isBoss: true,
+  };
+  const count = parseInt(document.getElementById('swarmCount').value,10);
+  const swarmName = document.getElementById('swarmName').value.trim().toUpperCase() || 'MINION';
+  const swarm = [];
+  for(let i=1;i<=count;i++){
+    swarm.push({
+      name: swarmName+' '+i,
+      color: document.getElementById('swarmColor').value,
+      hp: Math.max(20, parseInt(document.getElementById('swarmHp').value,10) || 300),
+      dmg: Math.max(1, parseInt(document.getElementById('swarmDmg').value,10) || 10),
+      growthKey: document.getElementById('swarmGrowth').value,
+      speed: 1.2, isBoss: false,
+    });
+  }
+  return [boss, ...swarm];
+}
+
+function resetGameMulti(){
+  const configs = currentMode==='ffa' ? readFfaConfigs() : readBossConfigs();
+  mFighters = configs.map(makeFighterMulti);
+  placeFightersWithoutOverlap(mFighters);
+  mPopups=[]; mStarted=false; mGameOver=false; mWinner=null;
+  buildHudMulti();
+  document.getElementById('start-overlay').style.display='flex';
+  document.getElementById('start-overlay').textContent='Tap to start';
+  document.getElementById('statusLine').textContent = 'Configure your fighters, then tap the arena to begin.';
+}
+
+const FFA_COLORS = ['#ff3b5c','#22d3ee','#ffc94a','#7f77dd','#63c93a','#e094c9'];
+let ffaRowCount = 0;
+function addFfaRow(name, color){
+  ffaRowCount++;
+  const idx = document.querySelectorAll('#ffaList .fighter-row').length;
+  const row = document.createElement('div');
+  row.className='fighter-row';
+  row.innerHTML =
+    '<div class="fighter-row-head">'+
+      '<input type="color" class="f-color" value="'+(color||FFA_COLORS[idx%FFA_COLORS.length])+'">'+
+      '<input type="text" class="f-name" maxlength="14" value="'+(name||('FIGHTER '+ffaRowCount))+'">'+
+      '<button type="button" class="remove-row" title="Remove">\u00d7</button>'+
+    '</div>'+
+    '<div class="row-fields">'+
+      '<div class="field"><label>HP</label><input type="number" class="f-hp" value="800" min="50"></div>'+
+      '<div class="field"><label>Damage</label><input type="number" class="f-dmg" value="12" min="1"></div>'+
+      '<div class="field field-full"><label>Damage growth</label><select class="f-growth"></select></div>'+
+    '</div>';
+  document.getElementById('ffaList').appendChild(row);
+  populateGrowthSelect(row.querySelector('.f-growth'));
+  row.querySelector('.remove-row').addEventListener('click', () => {
+    if(document.querySelectorAll('#ffaList .fighter-row').length<=2) return;
+    row.remove();
+    document.getElementById('ffaAddBtn').style.display='block';
+  });
+  if(document.querySelectorAll('#ffaList .fighter-row').length>=6){
+    document.getElementById('ffaAddBtn').style.display='none';
+  }
+}
+document.getElementById('ffaAddBtn').addEventListener('click', () => {
+  addFfaRow();
+  if(document.querySelectorAll('#ffaList .fighter-row').length>=6){
+    document.getElementById('ffaAddBtn').style.display='none';
+  }
+});
+addFfaRow('BLAZE','#ff3b5c');
+addFfaRow('FROST','#22d3ee');
+
+populateGrowthSelect(document.getElementById('bossGrowth'));
+populateGrowthSelect(document.getElementById('swarmGrowth'));
+document.getElementById('swarmCount').addEventListener('input', function(){
+  document.getElementById('swarmCountVal').textContent = this.value;
+});
+
+document.getElementById('ffaRestartBtn').addEventListener('click', resetGame);
+document.getElementById('bossRestartBtn').addEventListener('click', resetGame);
+
+document.getElementById('start-overlay').addEventListener('click', () => {
+  if(currentMode !== 'duel' && !mStarted){
+    ensureAudio(); mStarted=true;
+    document.getElementById('start-overlay').style.display='none';
+    document.getElementById('statusLine').textContent = 'Battle in progress...';
+  }
+});
+
+/* ============ Mode switching ============ */
+document.querySelectorAll('#gameModeTabs .mode-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('#gameModeTabs .mode-tab').forEach(t=>t.classList.toggle('active', t===tab));
+    currentMode = tab.dataset.mode;
+    document.getElementById('panel-duel').style.display = currentMode==='duel' ? 'block' : 'none';
+    document.getElementById('panel-ffa').style.display = currentMode==='ffa' ? 'block' : 'none';
+    document.getElementById('panel-boss').style.display = currentMode==='boss' ? 'block' : 'none';
+    document.getElementById('hud').style.display = currentMode==='duel' ? 'none' : 'flex';
+    resizeCanvas();
+    resetGame();
+  });
 });
 
 /* ============ Recording ============ */
@@ -990,7 +1399,7 @@ recordBtn.addEventListener('click', () => {
     return;
   }
   ensureAudio();
-  setCanvasResolution(EXPORT_RENDER_SCALE);
+  setCanvasResolution(1080 / activeWH().w);
   const videoStream = canvas.captureStream(30);
   const audioTracks = audioDest ? audioDest.stream.getAudioTracks() : [];
   const stream = new MediaStream([...videoStream.getVideoTracks(), ...audioTracks]);
@@ -1185,7 +1594,7 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
 // If we just came back from a successful checkout, refresh trial status
 // (the webhook flips the plan server-side, this just re-reads it).
 if(window.location.search.includes('checkout=success')){
-  window.addEventListener('load', () => { setTimeout(fetchTrialStatus, 1500); });
+  setTimeout(fetchTrialStatus, 2000);
 }
 
 // Calls the server-side record-clip Edge Function, which is the ONLY thing
