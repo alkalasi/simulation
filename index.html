@@ -495,6 +495,7 @@
 /* ============ Canvas / layout constants ============ */
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
+let currentMode = 'duel'; // 'duel' | 'ffa' | 'boss' \u2014 declared early, several functions below read it
 
 const W = 420;
 const LABEL_H = 32;
@@ -963,7 +964,6 @@ function drawDuel(){
 }
 
 let lastFrameTime = null;
-let currentMode = 'duel'; // 'duel' | 'ffa' | 'boss'
 function loop(timestamp){
   if(lastFrameTime === null) lastFrameTime = timestamp;
   let dt = (timestamp - lastFrameTime) / (1000 / 60); // normalized: 1.0 == one 60fps frame's worth of time
