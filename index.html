@@ -1059,7 +1059,7 @@ function nextDamageMulti(f){
   return Math.max(1, Math.round(clampVal(val)));
 }
 
-const M_GRAVITY = 0.22, M_WALL_BOUNCE = 0.85, M_KICK = 6.5;
+const M_GRAVITY = 0, M_WALL_BOUNCE = 0.98, M_KICK = 6.5;
 let mFighters = [], mPopups = [], mStarted=false, mGameOver=false, mWinner=null;
 
 function makeFighterMulti(conf){
@@ -1099,7 +1099,7 @@ function stepFighterMulti(f, dt){
   if(f.x<x0){ f.x=x0; f.vx=Math.abs(f.vx)*M_WALL_BOUNCE; }
   if(f.x>x1){ f.x=x1; f.vx=-Math.abs(f.vx)*M_WALL_BOUNCE; }
   if(f.y<y0){ f.y=y0; f.vy=Math.abs(f.vy)*M_WALL_BOUNCE; }
-  if(f.y>y1){ f.y=y1; f.vy=-Math.max(8,Math.abs(f.vy))*1.02; }
+  if(f.y>y1){ f.y=y1; f.vy=-Math.abs(f.vy)*M_WALL_BOUNCE; }
 }
 
 function resolveCollisionMulti(a, b){
