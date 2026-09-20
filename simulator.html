@@ -868,15 +868,15 @@ function updateDuel(dt){
 }
 
 /* ============ Drawing ============ */
-function drawWatermark(w, h){
+function drawWatermark(w, y){
   if(trialInfo.plan === 'pro') return;
   ctx.save();
-  ctx.globalAlpha = 0.28;
-  ctx.fillStyle = '#9a9a9a';
-  ctx.font = '700 22px Arial';
+  ctx.globalAlpha = 0.4;
+  ctx.fillStyle = '#8a8a8a';
+  ctx.font = '700 20px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('ClashArena.com', w / 2, h / 2);
+  ctx.fillText('clashballs.com', w / 2, y);
   ctx.restore();
 }
 
@@ -974,7 +974,7 @@ function drawDuel(){
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(winner + ' WINS', W/2, H/2);
   }
-  drawWatermark(W, H);
+  drawWatermark(W, BOT_ARENA_Y0 + 34);
 }
 
 let lastFrameTime = null;
@@ -1198,7 +1198,7 @@ function drawMulti(){
     ctx.textAlign='center'; ctx.textBaseline='middle';
     ctx.fillText(mWinner.name+' WINS', W_MULTI/2, H_MULTI/2);
   }
-  drawWatermark(W_MULTI, H_MULTI);
+  drawWatermark(W_MULTI, H_MULTI * 0.28);
 }
 
 function updateHudMulti(){
