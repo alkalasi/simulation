@@ -871,14 +871,12 @@ function updateDuel(dt){
 function drawWatermark(w, h){
   if(trialInfo.plan === 'pro') return;
   ctx.save();
-  ctx.globalAlpha = 0.55;
-  ctx.fillStyle = '#fff';
-  ctx.font = '700 13px Arial';
-  ctx.textAlign = 'right';
-  ctx.textBaseline = 'bottom';
-  ctx.shadowColor = 'rgba(0,0,0,0.6)';
-  ctx.shadowBlur = 3;
-  ctx.fillText('ClashArena.com', w - 10, h - 10);
+  ctx.globalAlpha = 0.28;
+  ctx.fillStyle = '#9a9a9a';
+  ctx.font = '700 22px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('ClashArena.com', w / 2, h / 2);
   ctx.restore();
 }
 
