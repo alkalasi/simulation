@@ -3,312 +3,416 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ClashArena — Build Viral Ball Battles</title>
+<title>ClashBalls — Build Viral Ball Battles</title>
+<meta name="description" content="Build health-bar ball battles in your browser and export them as vertical 1080×1920 videos for TikTok, Reels and Shorts. No download, no editing software.">
+<meta name="theme-color" content="#07070B">
+<meta property="og:type" content="website">
+<meta property="og:title" content="ClashBalls — Two balls enter. Only one survives.">
+<meta property="og:description" content="Build health-bar ball battles in your browser and export them as vertical videos for TikTok, Reels and Shorts.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2307070B'/%3E%3Ccircle cx='12' cy='16' r='6' fill='%23FF4F8B'/%3E%3Ccircle cx='20' cy='16' r='6' fill='%233BE7FF' fill-opacity='.9'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0E0F13;
-    --bg-raised:#171922;
-    --bg-raised-2:#1E212C;
-    --line:#2A2E3A;
-    --text:#F3F4F7;
-    --muted:#8B90A2;
-    --a:#FF3B5C;      /* fighter red */
-    --a-dim:#4a1420;
-    --b:#22D3EE;      /* fighter cyan */
-    --b-dim:#0e3038;
-    --gold:#FFC94A;
+    --bg:#07070B;
+    --bg-1:#0D0D14;
+    --bg-2:#13131D;
+    --line:rgba(255,255,255,0.08);
+    --line-2:rgba(255,255,255,0.14);
+    --text:#F4F3F8;
+    --muted:#9A98AB;
+    --dim:#62607280;
+    --a:#FF4F8B;      /* neon rose */
+    --b:#3BE7FF;      /* electric cyan */
+    --v:#8E6BFF;      /* violet */
+    --ok:#7CF2B0;
+    --grad:linear-gradient(100deg,var(--a) 0%,var(--v) 50%,var(--b) 100%);
+    --radius:20px;
+    --serif:'Instrument Serif',Georgia,serif;
+    --sans:'Inter Tight','Inter',system-ui,sans-serif;
   }
   *{box-sizing:border-box;}
-  html{scroll-behavior:smooth;}
+  html{scroll-behavior:smooth;overflow-x:clip;}
   body{
-    margin:0;
-    background:var(--bg);
-    color:var(--text);
-    font-family:'Inter',sans-serif;
-    line-height:1.55;
-    -webkit-font-smoothing:antialiased;
+    margin:0;background:var(--bg);color:var(--text);
+    font-family:var(--sans);font-size:16px;line-height:1.6;
+    -webkit-font-smoothing:antialiased;overflow-x:hidden;
   }
-  h1,h2,h3,.display{
-    font-family:'Bebas Neue',sans-serif;
-    letter-spacing:0.5px;
-    font-weight:400;
-    line-height:1.02;
-    margin:0;
+  /* soft neon ambience + grain */
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
+    background:
+      radial-gradient(600px 420px at 85% -5%, rgba(142,107,255,0.20), transparent 70%),
+      radial-gradient(520px 380px at -5% 25%, rgba(255,79,139,0.12), transparent 70%),
+      radial-gradient(520px 420px at 100% 70%, rgba(59,231,255,0.08), transparent 70%);
   }
+  body::after{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:200;opacity:.035;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  h1,h2,h3{margin:0;font-weight:600;letter-spacing:-0.035em;line-height:1.02;}
   p{margin:0;}
   a{color:inherit;text-decoration:none;}
-  .wrap{max-width:1160px;margin:0 auto;padding-left:24px;padding-right:24px;}
-  img,svg{display:block;max-width:100%;}
+  button{font-family:inherit;}
+  .wrap{max-width:1180px;margin:0 auto;padding-inline:24px;}
+  @media(max-width:600px){.wrap{padding-inline:16px;}}
+  .serif{font-family:var(--serif);font-style:italic;font-weight:400;letter-spacing:-0.01em;}
+  .grad-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  :focus-visible{outline:2px solid var(--b);outline-offset:3px;border-radius:6px;}
+
+  /* ---------- buttons ---------- */
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:10px;
+    height:52px;padding:0 26px;border-radius:999px;font-weight:600;font-size:15px;
+    border:none;cursor:pointer;transition:transform .2s ease, box-shadow .25s ease, background .2s ease, border-color .2s ease;
+    white-space:nowrap;
+  }
+  .btn:active{transform:scale(.98);}
+  .btn-primary{
+    color:#fff;background:var(--grad);background-size:160% 100%;background-position:0 0;
+    box-shadow:0 0 0 1px rgba(255,255,255,0.12) inset, 0 10px 40px -10px rgba(255,79,139,0.65);
+  }
+  .btn-primary:hover{background-position:100% 0;box-shadow:0 0 0 1px rgba(255,255,255,0.2) inset, 0 14px 50px -10px rgba(142,107,255,0.8);}
+  .btn-ghost{background:rgba(255,255,255,0.03);color:var(--text);border:1px solid var(--line-2);}
+  .btn-ghost:hover{border-color:rgba(255,255,255,0.32);background:rgba(255,255,255,0.06);}
+  .btn-light{background:var(--text);color:var(--bg);}
+  .btn-light:hover{background:#fff;}
+  .btn-block{width:100%;}
+  .btn .arrow{transition:transform .2s ease;}
+  .btn:hover .arrow{transform:translateX(3px);}
 
   /* ---------- NAV ---------- */
   nav{
     position:sticky;top:0;z-index:50;
-    background:rgba(14,15,19,0.85);
-    backdrop-filter:blur(10px);
+    background:rgba(7,7,11,0.72);backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);
     border-bottom:1px solid var(--line);
   }
-  .nav-inner{
-    max-width:1160px;margin:0 auto;padding:16px 24px;
-    display:flex;align-items:center;justify-content:space-between;
-  }
-  .logo{display:flex;align-items:center;gap:10px;font-family:'Bebas Neue',sans-serif;font-size:22px;}
-  .logo .dot-a{width:10px;height:10px;border-radius:50%;background:var(--a);}
-  .logo .dot-b{width:10px;height:10px;border-radius:50%;background:var(--b);margin-left:-4px;}
-  .nav-links{display:flex;gap:28px;font-size:14px;color:var(--muted);}
+  .nav-inner{max-width:1180px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:20px;}
+  @media(max-width:600px){.nav-inner{padding:12px 16px;}}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;letter-spacing:-0.03em;}
+  .logo-mark{position:relative;width:26px;height:18px;}
+  .logo-mark i{position:absolute;top:2px;width:14px;height:14px;border-radius:50%;}
+  .logo-mark i:first-child{left:0;background:var(--a);box-shadow:0 0 12px var(--a);}
+  .logo-mark i:last-child{right:0;background:var(--b);box-shadow:0 0 12px var(--b);mix-blend-mode:screen;}
+  .nav-links{display:flex;gap:30px;font-size:14px;color:var(--muted);}
+  .nav-links a{transition:color .2s;}
   .nav-links a:hover{color:var(--text);}
-  .nav-cta{
-    background:var(--text);color:var(--bg);
-    padding:9px 18px;border-radius:6px;font-size:14px;font-weight:600;
-    border:none;cursor:pointer;font-family:'Inter',sans-serif;
-  }
-  .nav-auth{display:flex;align-items:center;gap:12px;}
-  .nav-login{
-    background:none;border:none;color:var(--muted);font-size:14px;font-weight:600;
-    cursor:pointer;font-family:'Inter',sans-serif;
-  }
+  .nav-auth{display:flex;align-items:center;gap:8px;}
+  .nav-login{background:none;border:none;color:var(--muted);font-size:14px;font-weight:500;cursor:pointer;padding:8px 12px;}
   .nav-login:hover{color:var(--text);}
+  .nav-cta{height:38px;padding:0 18px;font-size:14px;}
   .nav-account{display:none;position:relative;}
   .nav-account-btn{
-    display:flex;align-items:center;gap:10px;font-size:14px;
-    background:none;border:none;cursor:pointer;color:var(--text);font-family:'Inter',sans-serif;padding:0;
+    display:flex;align-items:center;gap:10px;font-size:14px;font-weight:500;
+    background:rgba(255,255,255,0.04);border:1px solid var(--line);border-radius:999px;
+    cursor:pointer;color:var(--text);padding:4px 14px 4px 4px;
   }
   .nav-account-btn .avatar{
-    width:30px;height:30px;border-radius:50%;
-    background:linear-gradient(135deg,var(--a),var(--b));
-    display:flex;align-items:center;justify-content:center;
-    font-weight:700;font-size:13px;color:#0E0F13;
+    width:28px;height:28px;border-radius:50%;background:var(--grad);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#fff;
   }
   .account-dropdown{
-    display:none;position:absolute;top:calc(100% + 8px);right:0;
-    background:var(--bg-raised);border:1px solid var(--line);border-radius:10px;
-    min-width:180px;overflow:hidden;z-index:60;flex-direction:column;
+    display:none;position:absolute;top:calc(100% + 10px);right:0;
+    background:var(--bg-2);border:1px solid var(--line-2);border-radius:14px;
+    min-width:200px;overflow:hidden;z-index:60;flex-direction:column;padding:6px;
+    box-shadow:0 20px 50px -20px rgba(0,0,0,0.8);
   }
   .account-dropdown.open{display:flex;}
   .account-dropdown button{
     background:none;border:none;color:var(--text);text-align:left;
-    padding:11px 14px;font-size:13.5px;cursor:pointer;font-family:'Inter',sans-serif;
+    padding:10px 12px;font-size:14px;cursor:pointer;border-radius:8px;
   }
-  .account-dropdown button:hover{background:var(--bg-raised-2);}
-  .account-dropdown button + button{border-top:1px solid var(--line);}
-  @media(max-width:720px){.nav-links{display:none;}}
+  .account-dropdown button:hover{background:rgba(255,255,255,0.06);}
+  .account-dropdown .go-builder{color:var(--b);}
+  .menu-toggle{display:none;background:none;border:1px solid var(--line-2);border-radius:10px;width:40px;height:38px;cursor:pointer;color:var(--text);align-items:center;justify-content:center;}
+  .menu-toggle span{display:block;width:16px;height:1.5px;background:currentColor;position:relative;}
+  .menu-toggle span::before,.menu-toggle span::after{content:"";position:absolute;left:0;width:16px;height:1.5px;background:currentColor;}
+  .menu-toggle span::before{top:-5px;} .menu-toggle span::after{top:5px;}
+  .mobile-menu{display:none;border-top:1px solid var(--line);padding:8px 16px 16px;}
+  .mobile-menu a{display:block;padding:12px 4px;font-size:16px;color:var(--muted);border-bottom:1px solid var(--line);}
+  .mobile-menu a:last-child{border-bottom:none;}
+  nav.menu-open .mobile-menu{display:block;}
+  @media(max-width:860px){
+    .nav-links{display:none;}
+    .menu-toggle{display:inline-flex;}
+  }
+  @media(max-width:420px){.nav-login{display:none !important;}}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    display:grid;grid-template-columns:1.15fr 0.85fr;gap:56px;align-items:center;
+    padding-top:84px;padding-bottom:72px;
+  }
+  @media(max-width:920px){.hero{grid-template-columns:1fr;padding-top:48px;padding-bottom:48px;gap:48px;}}
+  .pill{
+    display:inline-flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);
+    border:1px solid var(--line-2);background:rgba(255,255,255,0.03);
+    padding:6px 14px 6px 8px;border-radius:999px;margin-bottom:28px;
+  }
+  .pill .live.viral{white-space:nowrap;flex:none;background:var(--grad);color:#fff;box-shadow:0 0 18px -4px rgba(255,79,139,0.8);}
+  .pill .live.viral::before{display:none;}
+  .hero .sub b{color:var(--text);font-weight:600;background:linear-gradient(transparent 62%, rgba(255,79,139,0.35) 62%);}
+  @media(max-width:520px){.pill{font-size:12px;line-height:1.35;padding:6px 12px 6px 6px;}}
+  .pill .live{
+    display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.08em;
+    color:var(--bg);background:var(--ok);padding:2px 8px;border-radius:999px;
+  }
+  .pill .live::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--bg);animation:blink 1.4s infinite;}
+  @keyframes blink{50%{opacity:.25;}}
+  .hero h1{font-size:clamp(46px,7.2vw,96px);}
+  .hero h1 .serif{font-size:1.08em;line-height:.9;padding-right:.06em;}
+  .hero .sub{color:var(--muted);font-size:clamp(16px,1.6vw,19px);max-width:44ch;margin-top:26px;}
+  .hero-ctas{display:flex;gap:12px;margin-top:36px;flex-wrap:wrap;}
+  .hero-note{display:flex;gap:18px;flex-wrap:wrap;margin-top:22px;font-size:13px;color:var(--muted);}
+  .hero-note span{display:inline-flex;align-items:center;gap:7px;}
+  .hero-note span::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok);}
+
+  /* phone with live battle */
+  .stage{position:relative;display:flex;justify-content:center;width:fit-content;margin-inline:auto;}
+  .stage::before{
+    content:"";position:absolute;width:115%;aspect-ratio:1;top:50%;left:50%;transform:translate(-50%,-50%);
+    background:radial-gradient(closest-side, rgba(142,107,255,0.28), rgba(255,79,139,0.08) 60%, transparent);
+    filter:blur(10px);z-index:0;
+  }
+  .phone{
+    position:relative;z-index:1;width:min(330px,78vw);aspect-ratio:9/16;
+    border-radius:44px;padding:10px;
+    background:linear-gradient(160deg,#2a2934,#111118 40%,#1d1c26);
+    box-shadow:0 0 0 1px rgba(255,255,255,0.10), 0 40px 90px -30px rgba(0,0,0,0.9), 0 0 80px -20px rgba(142,107,255,0.45);
+  }
+  .phone-screen{position:relative;width:100%;height:100%;border-radius:35px;overflow:hidden;background:#e9ddc4;
+    display:flex;align-items:center;justify-content:center;padding:56px 30px 34px;}
+  .phone-notch{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:84px;height:22px;border-radius:999px;background:#000;z-index:2;}
+  .float-chip{
+    position:absolute;z-index:2;display:flex;align-items:center;gap:8px;
+    background:rgba(19,19,29,0.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border:1px solid var(--line-2);border-radius:14px;padding:10px 14px;font-size:13px;
+    box-shadow:0 20px 40px -20px rgba(0,0,0,0.8);animation:floaty 6s ease-in-out infinite;
+  }
+  .float-chip b{font-weight:600;}
+  .float-chip small{display:block;color:var(--muted);font-size:11.5px;}
+  .float-chip .dotc{width:9px;height:9px;border-radius:50%;}
+  .chip-1{left:-6%;top:16%;}
+  .chip-2{right:-8%;bottom:18%;animation-delay:-3s;}
+  @keyframes floaty{50%{transform:translateY(-10px);}}
+  @media(max-width:520px){.chip-1{left:-4%;top:34%;}.chip-2{right:-4%;bottom:6%;}}
+
+  /* ---------- TICKER ---------- */
+  .ticker{border-block:1px solid var(--line);overflow:hidden;padding:20px 0;
+    mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent);}
+  .ticker-track{display:flex;gap:48px;width:max-content;animation:scroll 40s linear infinite;}
+  .ticker-item{display:flex;align-items:center;gap:14px;font-size:clamp(20px,2.4vw,28px);font-weight:600;letter-spacing:-0.03em;white-space:nowrap;color:#d9d7e4;}
+  .ticker-item .vs{font-family:var(--serif);font-style:italic;font-weight:400;color:var(--muted);font-size:.9em;}
+  .ticker-item .sep{width:6px;height:6px;border-radius:50%;background:var(--v);box-shadow:0 0 10px var(--v);margin-left:34px;}
+  @keyframes scroll{to{transform:translateX(-50%);}}
+
+  /* ---------- SECTIONS ---------- */
+  section{padding-top:120px;padding-bottom:0;}
+  @media(max-width:700px){section{padding-top:84px;}}
+  .eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:12.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:20px;}
+  .eyebrow::before{content:"";width:22px;height:1px;background:var(--grad);}
+  .section-head{max-width:720px;margin-bottom:56px;}
+  .section-head.center{margin-inline:auto;text-align:center;max-width:1000px;}
+  .section-head.center .eyebrow::after{content:"";width:22px;height:1px;background:var(--grad);}
+  .section-head h2{font-size:clamp(36px,5vw,60px);}
+  .section-head h2 .serif{font-size:1.06em;}
+  .section-head p{color:var(--muted);margin-top:18px;font-size:clamp(16px,1.4vw,18px);max-width:56ch;}
+  .section-head.center p{margin-inline:auto;}
+
+  /* ---------- MODES ---------- */
+  .modes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+  @media(max-width:920px){.modes-grid{grid-template-columns:1fr;}}
+  .card{
+    position:relative;background:linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0.01));
+    border:1px solid var(--line);border-radius:var(--radius);
+    transition:border-color .3s ease, transform .3s ease;
+  }
+  .card:hover{border-color:var(--line-2);}
+  .mode-card{padding:12px;overflow:hidden;}
+  .mode-art{position:relative;width:100%;aspect-ratio:3/4;max-height:500px;border-radius:14px;background:#e9ddc4;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.25);}
+  .mode-canvas{display:block;max-width:100%;max-height:100%;width:auto;height:auto;transition:transform .6s cubic-bezier(.2,.8,.2,1);}
+  .mode-card:hover .mode-canvas{transform:scale(1.02);}
+  .mode-body{padding:22px 14px 14px;}
+  .mode-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .mode-meta .tag{font-size:12px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:600;}
+  .mode-meta .num{font-family:var(--serif);font-style:italic;color:var(--muted);font-size:20px;}
+  .mode-card h3{font-size:28px;margin-bottom:10px;}
+  .mode-card p{color:var(--muted);font-size:15px;}
+  .soon-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:22px;font-size:14px;color:var(--muted);}
+  .soon-chip{border:1px dashed var(--line-2);border-radius:999px;padding:6px 14px;color:#cfcddb;}
+  .soon-chip em{font-style:normal;color:var(--muted);font-size:12px;margin-left:6px;}
+
+  /* ---------- STEPS ---------- */
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;counter-reset:step;}
+  @media(max-width:920px){.steps{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:560px){.steps{grid-template-columns:1fr;}}
+  .step{padding:28px 24px 30px;}
+  .step .n{font-family:var(--serif);font-style:italic;font-size:56px;line-height:1;margin-bottom:26px;display:block;}
+  .step h3{font-size:21px;margin-bottom:10px;letter-spacing:-0.02em;}
+  .step p{color:var(--muted);font-size:15px;}
+
+  /* ---------- FEATURES (bento) ---------- */
+  .bento{display:grid;grid-template-columns:repeat(6,1fr);gap:18px;}
+  .bento .card{padding:30px;}
+  .b-wide{grid-column:span 4;} .b-narrow{grid-column:span 2;} .b-third{grid-column:span 2;}
+  @media(max-width:920px){.b-wide,.b-narrow,.b-third{grid-column:span 3;}}
+  @media(max-width:620px){.bento{grid-template-columns:1fr;}.b-wide,.b-narrow,.b-third{grid-column:auto;}}
+  .b-full{grid-column:1 / -1;}
+  .bg-feature{display:grid;grid-template-columns:1.1fr 0.9fr;gap:32px;align-items:center;}
+  @media(max-width:760px){.bg-feature{grid-template-columns:1fr;gap:24px;}}
+  .bg-demo{display:flex;flex-direction:column;align-items:flex-start;gap:14px;}
+  .bg-dots{display:flex;flex-wrap:wrap;gap:12px;}
+  .bg-dot{width:46px;height:46px;border-radius:50%;border:none;padding:0;cursor:pointer;
+    box-shadow:0 0 0 1px rgba(255,255,255,0.18);transition:transform .2s, box-shadow .2s;}
+  .bg-dot:hover{transform:scale(1.08);}
+  .bg-dot.active{box-shadow:0 0 0 3px var(--bg), 0 0 0 5px var(--v);}
+  .bg-dot.rainbow{background:conic-gradient(from 0deg,#ff4f8b,#ffc24d,#7cf2b0,#3be7ff,#8e6bff,#ff4f8b);position:relative;cursor:default;}
+  .bg-dot.rainbow::after{content:"+";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:20px;text-shadow:0 1px 3px rgba(0,0,0,.5);}
+  .bg-demo-label{font-size:13.5px;color:var(--muted);}
+  .bg-demo-label b{color:var(--text);font-weight:600;}
+  .bento h3{font-size:22px;letter-spacing:-0.025em;margin-bottom:10px;}
+  .bento p{color:var(--muted);font-size:15px;max-width:48ch;}
+  .f-ico{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:22px;border:1px solid var(--line-2);background:rgba(255,255,255,0.03);}
+  .f-ico svg{width:20px;height:20px;}
+  .seq{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px;}
+  .seq span{
+    font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;padding:7px 12px;border-radius:10px;
+    border:1px solid var(--line);background:rgba(255,255,255,0.03);color:#d9d7e4;
+  }
+  .seq span:nth-last-child(-n+3){border-color:rgba(255,79,139,0.45);color:var(--a);background:rgba(255,79,139,0.07);}
+  .seq span:last-child{border-color:rgba(255,79,139,0.8);box-shadow:0 0 20px -6px var(--a);}
+  .seq-label{font-size:13px;color:var(--muted);margin-top:12px;}
+  .hp-demo{margin-top:26px;display:flex;flex-direction:column;gap:10px;}
+  .hp-demo .row{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.06em;}
+  .hp-demo .bars{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:5px;}
+  .hp-demo .bars i{height:8px;border-radius:4px;background:rgba(255,255,255,0.07);overflow:hidden;position:relative;}
+  .hp-demo .bars i b{position:absolute;inset:0;border-radius:4px;}
+  .export-badge{display:flex;align-items:baseline;gap:8px;margin-top:22px;}
+  .export-badge strong{font-size:44px;letter-spacing:-0.04em;font-weight:600;}
+  .export-badge span{color:var(--muted);font-size:14px;}
+
+  /* ---------- PRICING ---------- */
+  .price-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:920px;margin:0 auto;}
+  @media(max-width:760px){.price-grid{grid-template-columns:1fr;}}
+  .price-card{padding:36px;display:flex;flex-direction:column;}
+  .price-card.pro{border:1px solid transparent;
+    background:linear-gradient(var(--bg-1),var(--bg-1)) padding-box, var(--grad) border-box;
+    box-shadow:0 30px 80px -40px rgba(142,107,255,0.7);}
+  .price-top{display:flex;align-items:center;justify-content:space-between;}
+  .price-card h3{font-size:16px;font-weight:600;letter-spacing:0;color:var(--muted);}
+  .price-card.pro h3{color:var(--text);}
+  .badge{font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:5px 10px;border-radius:999px;background:var(--grad);color:#fff;}
+  .price-amount{font-size:64px;font-weight:600;letter-spacing:-0.05em;margin:18px 0 2px;line-height:1;}
+  .price-amount span{font-size:16px;color:var(--muted);font-weight:500;letter-spacing:0;margin-left:4px;}
+  .price-desc{color:var(--muted);font-size:14.5px;}
+  .billing-toggle{display:inline-flex;gap:4px;margin-top:16px;padding:4px;border-radius:999px;background:rgba(255,255,255,0.04);border:1px solid var(--line);}
+  .bt-opt{border:none;background:none;color:var(--muted);font-size:13px;font-weight:600;padding:7px 14px;border-radius:999px;cursor:pointer;font-family:inherit;}
+  .bt-opt.active{background:var(--text);color:var(--bg);}
+  .bt-save{font-size:11px;font-weight:700;color:var(--ok);margin-left:4px;}
+  .bt-opt.active .bt-save{color:#0a7a45;}
+  .price-list{list-style:none;padding:0;margin:28px 0 32px;display:flex;flex-direction:column;gap:13px;font-size:15px;flex:1;}
+  .price-list li{display:flex;gap:12px;align-items:flex-start;}
+  .price-list li::before{content:"";flex:none;width:18px;height:18px;margin-top:3px;border-radius:50%;
+    background:rgba(124,242,176,0.12) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%237CF2B0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5'/%3E%3C/svg%3E") center/12px no-repeat;}
+  .price-list li.off{color:var(--muted);}
+  .price-list li.off::before{background:rgba(255,255,255,0.05) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%2362607A' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M5 8h6'/%3E%3C/svg%3E") center/12px no-repeat;}
+  .referral{
+    max-width:920px;margin:18px auto 0;display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+    padding:18px 22px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,0.02);font-size:14.5px;color:var(--muted);
+  }
+  .referral strong{color:var(--text);font-weight:600;}
+  .referral .gift{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(255,79,139,0.1);border:1px solid rgba(255,79,139,0.3);flex:none;}
+
+  /* ---------- FAQ ---------- */
+  .faq-layout{display:grid;grid-template-columns:0.8fr 1.2fr;gap:56px;align-items:start;}
+  @media(max-width:860px){.faq-layout{grid-template-columns:1fr;gap:0;}}
+  .faq-list{border-top:1px solid var(--line);}
+  .faq-item{border-bottom:1px solid var(--line);}
+  .faq-item summary{
+    list-style:none;cursor:pointer;padding:24px 0;font-size:18px;font-weight:500;letter-spacing:-0.015em;
+    display:flex;justify-content:space-between;align-items:center;gap:20px;
+  }
+  .faq-item summary::-webkit-details-marker{display:none;}
+  .faq-item .plus{flex:none;width:30px;height:30px;border-radius:50%;border:1px solid var(--line-2);position:relative;transition:transform .3s ease, border-color .3s;}
+  .faq-item .plus::before,.faq-item .plus::after{content:"";position:absolute;top:50%;left:50%;width:11px;height:1.5px;background:var(--text);transform:translate(-50%,-50%);}
+  .faq-item .plus::after{transform:translate(-50%,-50%) rotate(90deg);transition:opacity .3s;}
+  .faq-item[open] .plus{transform:rotate(180deg);border-color:var(--v);}
+  .faq-item[open] .plus::after{opacity:0;}
+  .faq-item .faq-a{color:var(--muted);font-size:15.5px;padding:0 50px 24px 0;max-width:62ch;}
+
+  /* ---------- CONTACT ---------- */
+  .contact-card{display:grid;grid-template-columns:0.8fr 1.2fr;gap:56px;padding:48px;}
+  @media(max-width:860px){.contact-card{grid-template-columns:1fr;gap:32px;padding:28px;}}
+  .contact-card h2{font-size:clamp(34px,4vw,48px);}
+  .contact-card .lead{color:var(--muted);margin-top:16px;}
+  .contact-form .row-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:600px){.contact-form .row-2{grid-template-columns:1fr;}}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:13px;color:var(--muted);margin-bottom:7px;font-weight:500;}
+  .field input,.field textarea{
+    width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--line-2);
+    background:rgba(0,0,0,0.25);color:var(--text);font-size:15px;font-family:inherit;transition:border-color .2s, box-shadow .2s;
+  }
+  .field textarea{resize:vertical;min-height:120px;}
+  .field input:focus,.field textarea:focus{outline:none;border-color:var(--v);box-shadow:0 0 0 4px rgba(142,107,255,0.18);}
+  .modal-error{color:var(--a);font-size:13.5px;margin-top:12px;display:none;}
+  .contact-success{color:var(--ok);font-size:13.5px;margin-top:12px;display:none;}
+
+  /* ---------- FINAL CTA ---------- */
+  .final-cta{text-align:center;padding:96px 24px;margin-top:120px;border-radius:28px;position:relative;overflow:hidden;
+    border:1px solid var(--line);background:radial-gradient(600px 300px at 50% 120%, rgba(142,107,255,0.35), transparent 70%), var(--bg-1);}
+  @media(max-width:700px){.final-cta{padding:64px 20px;margin-top:84px;}}
+  .final-cta h2{font-size:clamp(40px,6vw,76px);}
+  .final-cta p{color:var(--muted);margin:20px auto 34px;max-width:44ch;font-size:17px;}
+
+  /* ---------- FOOTER ---------- */
+  footer{padding:56px 0 40px;color:var(--muted);font-size:14px;}
+  .footer-inner{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px;border-top:1px solid var(--line);padding-top:32px;}
+  .footer-links{display:flex;gap:24px;flex-wrap:wrap;}
+  .footer-links a:hover{color:var(--text);}
 
   /* ---------- AUTH MODAL ---------- */
-  .modal-overlay{
-    position:fixed;inset:0;background:rgba(8,9,12,0.72);
-    display:none;align-items:center;justify-content:center;
-    z-index:100;padding:20px;
-  }
-  .modal-overlay.open{display:flex;}
-  .modal-card{
-    background:var(--bg-raised);border:1px solid var(--line);
-    border-radius:16px;padding:32px;width:100%;max-width:380px;
-    position:relative;
-  }
-  .modal-close{
-    position:absolute;top:16px;right:16px;background:none;border:none;
-    color:var(--muted);font-size:20px;cursor:pointer;line-height:1;
-  }
+  .modal-overlay{position:fixed;inset:0;background:rgba(4,4,8,0.7);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    display:none;align-items:center;justify-content:center;z-index:100;padding:16px;}
+  .modal-overlay.open{display:flex;animation:fade .2s ease;}
+  @keyframes fade{from{opacity:0;}}
+  .modal-card{background:var(--bg-1);border:1px solid var(--line-2);border-radius:24px;padding:32px;width:100%;max-width:400px;position:relative;
+    box-shadow:0 40px 100px -30px rgba(0,0,0,0.9), 0 0 80px -30px rgba(142,107,255,0.5);animation:pop .25s cubic-bezier(.2,.8,.2,1);}
+  @keyframes pop{from{transform:translateY(10px) scale(.98);opacity:0;}}
+  @media(max-width:420px){.modal-card{padding:24px;}}
+  .modal-close{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.05);border:1px solid var(--line);color:var(--muted);font-size:18px;cursor:pointer;line-height:1;}
   .modal-close:hover{color:var(--text);}
-  .modal-tabs{display:flex;gap:4px;background:var(--bg-raised-2);border-radius:8px;padding:4px;margin-bottom:22px;}
-  .modal-tab{
-    flex:1;text-align:center;padding:9px 0;border-radius:6px;font-size:14px;font-weight:600;
-    color:var(--muted);cursor:pointer;background:none;border:none;font-family:'Inter',sans-serif;
-  }
-  .modal-tab.active{background:var(--bg-raised);color:var(--text);}
-  .modal-card h2{font-size:26px;margin-bottom:6px;}
-  .modal-sub{color:var(--muted);font-size:13.5px;margin-bottom:22px;}
-  .field{margin-bottom:14px;}
-  .field label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;}
-  .field input{
-    width:100%;padding:11px 12px;border-radius:8px;border:1px solid var(--line);
-    background:var(--bg);color:var(--text);font-size:14px;font-family:'Inter',sans-serif;
-  }
-  .field input:focus{outline:2px solid var(--b);outline-offset:1px;border-color:transparent;}
-  .modal-submit{
-    width:100%;background:linear-gradient(90deg,var(--a),#ff6b7f);color:#fff;
-    border:none;padding:12px 0;border-radius:8px;font-weight:700;font-size:15px;
-    cursor:pointer;margin-top:6px;
-  }
-  .modal-error{color:var(--a);font-size:13px;margin-top:10px;display:none;}
-  .contact-form{max-width:640px;}
-  .contact-form .row-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-  @media(max-width:600px){.contact-form .row-2{grid-template-columns:1fr;}}
-  .field textarea{
-    width:100%;padding:11px 12px;border-radius:8px;border:1px solid var(--line);
-    background:var(--bg-raised);color:var(--text);font-size:14px;font-family:'Inter',sans-serif;
-    resize:vertical;
-  }
-  .field textarea:focus{outline:2px solid var(--b);outline-offset:1px;border-color:transparent;}
-  .contact-success{color:#4ADE80;font-size:13px;margin-top:10px;display:none;}
-  #contactSubmitBtn{width:auto;padding:0 28px;}
-  .modal-success{
-    display:none;text-align:center;padding:10px 0 4px;
-  }
-  .modal-success .icon{font-size:38px;margin-bottom:10px;}
+  .modal-tabs{display:flex;gap:4px;background:rgba(255,255,255,0.04);border:1px solid var(--line);border-radius:999px;padding:4px;margin-bottom:26px;margin-right:40px;}
+  .modal-tab{flex:1;text-align:center;padding:8px 0;border-radius:999px;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;background:none;border:none;}
+  .modal-tab.active{background:var(--text);color:var(--bg);}
+  .modal-card h2{font-size:30px;margin-bottom:8px;}
+  .modal-sub{color:var(--muted);font-size:14px;margin-bottom:24px;}
+  .modal-submit{width:100%;margin-top:6px;}
+  .modal-success{display:none;text-align:center;padding:12px 0 4px;}
+  .modal-success .icon{width:56px;height:56px;margin:0 auto 16px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;box-shadow:0 0 40px -6px var(--v);}
   .modal-success h2{margin-bottom:8px;}
-  .modal-success p{color:var(--muted);font-size:14px;}
+  .modal-success p{color:var(--muted);font-size:14.5px;}
   .form-pane{display:none;}
   .form-pane.active{display:block;}
 
-  /* ---------- HERO ---------- */
-  .referral-banner{background:linear-gradient(90deg,#241d10,#2a1420);border-bottom:1px solid #453a20;}
-  .referral-banner-inner{
-    display:flex;align-items:center;justify-content:center;gap:10px;
-    padding:12px 24px;text-align:center;flex-wrap:wrap;
+  /* ---------- reveal ---------- */
+  .reveal{opacity:0;transform:translateY(18px);transition:opacity .8s ease, transform .8s cubic-bezier(.2,.8,.2,1);}
+  .reveal.in{opacity:1;transform:none;}
+  @media (prefers-reduced-motion: reduce){
+    .reveal{opacity:1;transform:none;transition:none;}
+    .ticker-track,.float-chip,.pill .live::before{animation:none;}
+    html{scroll-behavior:auto;}
   }
-  .referral-icon{font-size:18px;}
-  .referral-banner-inner p{font-size:14px;color:var(--text);}
-  .referral-banner-inner strong{color:var(--gold);}
-  .hero{
-    padding:72px 0 60px;
-    display:grid;grid-template-columns:1.1fr 1fr;gap:48px;align-items:center;
-  }
-  @media(max-width:900px){.hero{grid-template-columns:1fr;padding:44px 0 40px;}}
-  .eyebrow-plain{color:var(--muted);font-size:14px;margin-bottom:14px;}
-  .hero h1{font-size:clamp(42px,6vw,72px);}
-  .hero h1 span.vs{
-    display:inline-block;color:var(--gold);
-  }
-  .hero p.sub{
-    color:var(--muted);font-size:18px;max-width:46ch;margin-top:18px;
-  }
-  .hero-ctas{display:flex;gap:14px;margin-top:30px;flex-wrap:wrap;}
-  .btn-primary{
-    background:linear-gradient(90deg,var(--a),#ff6b7f);
-    color:#fff;height:52px;padding:0 26px;line-height:52px;border-radius:8px;font-weight:700;font-size:15px;
-    border:none;cursor:pointer;box-sizing:border-box;
-  }
-  .btn-ghost{
-    border:1px solid var(--line);padding:14px 26px;border-radius:8px;
-    font-weight:600;font-size:15px;color:var(--text);
-  }
-  .btn-ghost:hover{border-color:var(--muted);}
-  .btn-light{
-    background:var(--text);color:var(--bg);border:none;
-    height:52px;padding:0 26px;line-height:52px;border-radius:8px;font-weight:700;font-size:15px;
-    cursor:pointer;font-family:'Inter',sans-serif;box-sizing:border-box;
-  }
-  .btn-light:hover{opacity:0.9;}
-  .pricing-cta{
-    display:flex !important;align-items:center !important;justify-content:center !important;
-    width:100% !important;height:52px !important;min-height:52px !important;max-height:52px !important;
-    box-sizing:border-box !important;padding:0 !important;margin:0 !important;line-height:normal !important;
-  }
-
-  /* Arena mockup */
-  .arena-card{
-    background:var(--bg-raised);
-    border:1px solid var(--line);
-    border-radius:16px;
-    padding:22px;
-  }
-  .arena-ring{
-    position:relative;
-    aspect-ratio:1/1;
-    border-radius:50%;
-    border:2px dashed var(--line);
-    display:flex;align-items:center;justify-content:center;
-    background:radial-gradient(circle at 50% 50%, #14161d 0%, #0c0d11 75%);
-  }
-  .ball{
-    width:20%;height:20%;border-radius:50%;position:absolute;
-    box-shadow:0 0 22px currentColor;
-  }
-  .ball-a{background:var(--a);color:var(--a);top:26%;left:20%;}
-  .ball-b{background:var(--b);color:var(--b);bottom:26%;right:20%;}
-  .vs-mark{
-    font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--gold);
-  }
-  .hp-panel{margin-top:16px;display:flex;flex-direction:column;gap:10px;}
-  .hp-row{display:flex;align-items:center;gap:10px;font-size:13px;}
-  .hp-name{width:64px;color:var(--muted);}
-  .hp-track{flex:1;height:8px;border-radius:5px;background:var(--bg-raised-2);overflow:hidden;}
-  .hp-fill{height:100%;border-radius:5px;}
-  .hp-fill.a{width:64%;background:var(--a);}
-  .hp-fill.b{width:41%;background:var(--b);}
-  .hp-num{width:34px;text-align:right;color:var(--muted);}
-
-  /* ---------- SECTION HEADERS ---------- */
-  section{padding:70px 0;}
-  .section-head{max-width:640px;margin-bottom:40px;}
-  .section-head h2{font-size:clamp(32px,4vw,46px);}
-  .section-head p{color:var(--muted);margin-top:12px;font-size:16px;}
-
-  /* ---------- MODES GRID ---------- */
-  .modes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
-  @media(max-width:900px){.modes-grid{grid-template-columns:repeat(2,1fr);}}
-  @media(max-width:600px){.modes-grid{grid-template-columns:1fr;}}
-  .mode-card{background:var(--bg-raised);padding:26px;}
-  .mode-card h3{font-size:22px;margin-bottom:8px;}
-  .mode-card p{color:var(--muted);font-size:14.5px;}
-  .mode-tag{
-    display:inline-block;font-size:11.5px;color:var(--gold);
-    border:1px solid #453a20;background:#241d10;
-    padding:3px 9px;border-radius:20px;margin-bottom:12px;
-  }
-  .coming-soon{
-    display:inline-block;font-size:11px;color:var(--muted);
-    border:1px solid var(--line);background:var(--bg-raised-2);
-    padding:3px 9px;border-radius:20px;margin-bottom:12px;margin-left:6px;
-  }
-
-  /* ---------- HOW IT WORKS ---------- */
-  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:28px;}
-  @media(max-width:900px){.steps{grid-template-columns:repeat(2,1fr);}}
-  @media(max-width:560px){.steps{grid-template-columns:1fr;}}
-  .step{border-top:2px solid var(--line);padding-top:16px;}
-  .step .num{font-family:'Bebas Neue',sans-serif;font-size:34px;color:var(--muted);}
-  .step h3{font-size:19px;margin:8px 0 8px;}
-  .step p{color:var(--muted);font-size:14.5px;}
-
-  /* ---------- FEATURES ---------- */
-  .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;}
-  @media(max-width:900px){.feat-grid{grid-template-columns:repeat(2,1fr);}}
-  @media(max-width:600px){.feat-grid{grid-template-columns:1fr;}}
-  .feat{background:var(--bg-raised);border:1px solid var(--line);border-radius:12px;padding:22px;}
-  .feat .icon{font-size:22px;margin-bottom:10px;}
-  .feat h3{font-family:'Inter',sans-serif;font-weight:700;font-size:16px;margin-bottom:6px;}
-  .feat p{color:var(--muted);font-size:14px;}
-
-  /* ---------- PRICING ---------- */
-  .price-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
-  @media(max-width:760px){.price-grid{grid-template-columns:1fr;}}
-  .price-card{background:var(--bg-raised);border:1px solid var(--line);border-radius:16px;padding:32px;}
-  .price-card.pro{border-color:var(--a);background:linear-gradient(180deg,#1c1418,var(--bg-raised) 40%);}
-  .price-card h3{font-family:'Inter',sans-serif;font-weight:700;font-size:18px;color:var(--muted);}
-  .price-card.pro h3{color:var(--a);}
-  .price-amount{font-family:'Bebas Neue',sans-serif;font-size:52px;margin:10px 0 4px;}
-  .price-amount span{font-family:'Inter',sans-serif;font-size:15px;color:var(--muted);font-weight:500;}
-  .price-list{list-style:none;padding:0;margin:22px 0 26px;display:flex;flex-direction:column;gap:10px;font-size:14.5px;color:var(--text);}
-  .price-list li{display:flex;gap:10px;}
-  .price-list li::before{content:"✓";color:var(--gold);}
-
-  /* ---------- FAQ ---------- */
-  .faq-item{border-bottom:1px solid var(--line);}
-  .faq-q{
-    width:100%;text-align:left;background:none;border:none;color:var(--text);
-    padding:20px 0;font-size:16.5px;font-weight:600;cursor:pointer;
-    display:flex;justify-content:space-between;align-items:center;font-family:'Inter',sans-serif;
-  }
-  .faq-q .plus{color:var(--muted);font-size:20px;transition:transform .2s ease;}
-  .faq-item.open .faq-q .plus{transform:rotate(45deg);}
-  .faq-a{max-height:0;overflow:hidden;color:var(--muted);font-size:14.5px;transition:max-height .25s ease;}
-  .faq-item.open .faq-a{max-height:200px;padding-bottom:20px;}
-
-  /* ---------- FOOTER ---------- */
-  footer{border-top:1px solid var(--line);padding:36px 0;color:var(--muted);font-size:13.5px;}
-  .footer-inner{display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px;}
-  .footer-links{display:flex;gap:20px;flex-wrap:wrap;}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
-<nav>
+<nav id="nav">
   <div class="nav-inner">
-    <div class="logo"><span class="dot-a"></span><span class="dot-b"></span>&nbsp;ClashArena</div>
+    <a href="#" class="logo" aria-label="ClashBalls home"><span class="logo-mark"><i></i><i></i></span>ClashBalls</a>
     <div class="nav-links">
       <a href="#modes">Modes</a>
       <a href="#how">How it works</a>
@@ -317,255 +421,328 @@
       <a href="#faq">FAQ</a>
     </div>
     <div class="nav-auth">
-      <button class="nav-login" id="openLogin">Log In</button>
-      <button class="nav-cta" id="openSignup">Sign Up</button>
+      <button class="nav-login" id="openLogin">Log in</button>
+      <button class="btn btn-light nav-cta" id="openSignup">Sign up</button>
       <div class="nav-account" id="navAccount">
-        <button class="nav-account-btn" id="navAccountBtn">
-          <span class="avatar" id="navAvatar">A</span>
-          <span id="navName">Anas</span>
+        <button class="nav-account-btn" id="navAccountBtn" aria-haspopup="true">
+          <span class="avatar" id="navAvatar">?</span>
+          <span id="navName"></span>
         </button>
         <div class="account-dropdown" id="navAccountDropdown">
+          <button class="go-builder" onclick="location.href='simulator.html'">Open builder →</button>
           <button id="manageSubBtn" style="display:none;">Manage subscription</button>
           <button id="logoutBtn">Log out</button>
         </div>
       </div>
+      <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false"><span></span></button>
     </div>
+  </div>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#modes">Modes</a>
+    <a href="#how">How it works</a>
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#faq">FAQ</a>
   </div>
 </nav>
 
 <header class="wrap hero">
   <div>
-    <div class="eyebrow-plain">Browser-based ball battle builder</div>
-    <h1>Two balls enter.<br>Only one health bar<br>survives<span class="vs">.</span></h1>
-    <p class="sub">Name your fighters, set their colors and damage, and watch a live health-bar duel play out — built for TikTok, Reels, and Shorts. No editing software, no download required.</p>
+    <div class="pill"><span class="live viral">VIRAL</span>The format pulling millions of views on TikTok, Reels &amp; Shorts</div>
+    <h1>Two balls enter.<br><span class="serif grad-text">Only one</span> survives.</h1>
+    <p class="sub">Ball-battle clips are racking up <b>millions of views</b>. Build yours in minutes: name the fighters, tune the damage and export a vertical clip that's ready to post and ready to go viral.</p>
     <div class="hero-ctas">
-      <button class="btn-primary open-signup-trigger">Start a Battle</button>
-      <a href="#modes" class="btn-ghost">See Battle Modes</a>
+      <a href="simulator.html" class="btn btn-primary">Build a battle free <span class="arrow">→</span></a>
+      <a href="#how" class="btn btn-ghost">See how it works</a>
     </div>
+    <div class="hero-note"><span>No sign-up to try</span><span>3 free clips</span><span>No credit card</span></div>
   </div>
-  <div class="arena-card">
-    <div class="arena-ring">
-      <div class="ball ball-a"></div>
-      <div class="ball ball-b"></div>
-      <div class="vs-mark">VS</div>
-    </div>
-    <div class="hp-panel">
-      <div class="hp-row">
-        <div class="hp-name" style="color:var(--a)">BLAZE</div>
-        <div class="hp-track"><div class="hp-fill a"></div></div>
-        <div class="hp-num">64</div>
-      </div>
-      <div class="hp-row">
-        <div class="hp-name" style="color:var(--b)">FROST</div>
-        <div class="hp-track"><div class="hp-fill b"></div></div>
-        <div class="hp-num">41</div>
+
+  <div class="stage" aria-hidden="true">
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="phone-notch"></div>
+        <canvas class="mode-canvas hero-canvas" data-mode="duel" data-theme="1"></canvas>
       </div>
     </div>
+    <div class="float-chip chip-1"><span class="dotc" style="background:#ff3b5c;box-shadow:0 0 10px #ff3b5c"></span><div><b id="chipDmg">-10 DMG</b><small>Doubling per hit</small></div></div>
+    <div class="float-chip chip-2"><span class="dotc" id="chipSwatch" style="width:14px;height:14px;background:#c9ecd9;box-shadow:0 0 0 2px rgba(255,255,255,0.25)"></span><div><b id="chipTheme">Mint</b><small>Background colour</small></div></div>
   </div>
 </header>
 
-<div class="referral-banner wrap-inner">
-  <div class="wrap referral-banner-inner">
-    <span class="referral-icon">🎁</span>
-    <p><strong>Refer a friend, get 50% off.</strong> When someone signs up with your link and goes Pro, you get 50% off your next payment — automatically.</p>
-  </div>
+<div class="ticker" aria-hidden="true">
+  <div class="ticker-track" id="tickerTrack"></div>
 </div>
 
 <section id="modes" class="wrap">
-  <div class="section-head">
-    <h2>Every battle needs a format</h2>
-    <p>Six ways to turn two balls and a health bar into a video worth watching to the end.</p>
+  <div class="section-head reveal">
+    <div class="eyebrow">Battle modes</div>
+    <h2>Pick a format. <span class="serif grad-text">Tell a story.</span></h2>
+    <p>Every mode turns a few balls and some health bars into a clip people watch to the very last hit.</p>
   </div>
   <div class="modes-grid">
-    <div class="mode-card">
-      <span class="mode-tag">1v1</span>
-      <h3>Duel</h3>
-      <p>Two balls, two health bars, one arena. Every collision chips away at HP until a single winner is left standing.</p>
-    </div>
-    <div class="mode-card">
-      <span class="mode-tag">Odds</span>
-      <span class="coming-soon">Coming Soon</span>
-      <h3>Underdog</h3>
-      <p>Give one ball a size and damage disadvantage on purpose. The bigger the gap, the more satisfying the comeback.</p>
-    </div>
-    <div class="mode-card">
-      <span class="mode-tag">Chaos</span>
-      <h3>Free-For-All</h3>
-      <p>Add up to six balls to one arena. Health bars stack on screen and the field thins out hit by hit.</p>
-    </div>
-    <div class="mode-card">
-      <span class="mode-tag">Bracket</span>
-      <span class="coming-soon">Coming Soon</span>
-      <h3>Tournament</h3>
-      <p>Run a string of duels back to back and carry the winner's damaged health bar into the next round.</p>
-    </div>
-    <div class="mode-card">
-      <span class="mode-tag">Boss</span>
-      <h3>Boss Fight</h3>
-      <p>One oversized ball with a health bar in the thousands against a swarm of small ones chipping it down.</p>
-    </div>
-    <div class="mode-card">
-      <span class="mode-tag">Roulette</span>
-      <span class="coming-soon">Coming Soon</span>
-      <h3>Damage Roulette</h3>
-      <p>Hit damage is randomized within a range you set, so even a rematch with the same names never plays out the same way.</p>
-    </div>
+    <article class="card mode-card reveal">
+      <div class="mode-art"><canvas class="mode-canvas" data-mode="duel" data-theme="0"></canvas></div>
+      <div class="mode-body">
+        <div class="mode-meta"><span class="tag">1 vs 1</span><span class="num">01</span></div>
+        <h3>Duel</h3>
+        <p>Two fighters, two health bars, one arena. Every collision chips away until one is left standing.</p>
+      </div>
+    </article>
+    <article class="card mode-card reveal">
+      <div class="mode-art"><canvas class="mode-canvas" data-mode="ffa" data-theme="2"></canvas></div>
+      <div class="mode-body">
+        <div class="mode-meta"><span class="tag">Up to 6</span><span class="num">02</span></div>
+        <h3>Free-for-all</h3>
+        <p>Throw several fighters into one arena. Health bars stack on screen and the field thins out hit by hit.</p>
+      </div>
+    </article>
+    <article class="card mode-card reveal">
+      <div class="mode-art"><canvas class="mode-canvas" data-mode="boss" data-theme="3"></canvas></div>
+      <div class="mode-body">
+        <div class="mode-meta"><span class="tag">1 vs many</span><span class="num">03</span></div>
+        <h3>Boss Fight</h3>
+        <p>One oversized boss with a massive health pool against a swarm of small fighters chipping it down.</p>
+      </div>
+    </article>
+  </div>
+  <div class="soon-row reveal">
+    <span>Coming soon:</span>
+    <span class="soon-chip">Underdog</span>
+    <span class="soon-chip">Tournament</span>
+    <span class="soon-chip">Damage Roulette</span>
   </div>
 </section>
 
 <section id="how" class="wrap">
-  <div class="section-head">
-    <h2>From idea to export in four steps</h2>
+  <div class="section-head reveal">
+    <div class="eyebrow">How it works</div>
+    <h2>From idea to upload <span class="serif grad-text">in four steps.</span></h2>
     <p>No design skills needed. The defaults already look like a finished clip.</p>
   </div>
   <div class="steps">
-    <div class="step">
-      <div class="num">1</div>
+    <div class="card step reveal">
+      <span class="n grad-text">1</span>
       <h3>Name your fighters</h3>
-      <p>Type two names — a rivalry, two friends, two brands — anything that gives the fight a reason to matter.</p>
+      <p>A rivalry, two friends, two teams. Anything that gives the fight a reason to matter.</p>
     </div>
-    <div class="step">
-      <div class="num">2</div>
-      <h3>Set colors & damage</h3>
-      <p>Pick each ball's color, size, and hit damage. Even the odds, or don't — that's the story you're telling.</p>
+    <div class="card step reveal">
+      <span class="n grad-text">2</span>
+      <h3>Tune the fight</h3>
+      <p>Set colours, HP, speed and how damage grows with every hit. Make it fair, or don't.</p>
     </div>
-    <div class="step">
-      <div class="num">3</div>
+    <div class="card step reveal">
+      <span class="n grad-text">3</span>
       <h3>Run the battle</h3>
-      <p>Press start and watch the health bars drain in real time. Restart as many times as it takes to get a clean finish.</p>
+      <p>Hit start and watch it play out live. Restart until you get the ending you want.</p>
     </div>
-    <div class="step">
-      <div class="num">4</div>
-      <h3>Export & post</h3>
-      <p>Render an MP4 in vertical 1080×1920, download it, and post — no watermark, no re-encoding.</p>
+    <div class="card step reveal">
+      <span class="n grad-text">4</span>
+      <h3>Record and post</h3>
+      <p>Record the fight as a 1080×1920 MP4, download it and post it straight away.</p>
     </div>
   </div>
 </section>
 
 <section id="features" class="wrap">
-  <div class="section-head">
-    <h2>Built to be tweaked</h2>
-    <p>Every fight is made of small settings. Change one and the whole clip feels different.</p>
+  <div class="section-head reveal">
+    <div class="eyebrow">Features</div>
+    <h2>Small settings. <span class="serif grad-text">Big moments.</span></h2>
+    <p>Each fight is built from a few settings, and changing just one makes the whole clip feel different.</p>
   </div>
-  <div class="feat-grid">
-    <div class="feat"><div class="icon">🩸</div><h3>Multi-stage health bars</h3><p>Segment each ball's HP into stages so a fight has visible turning points, not just one long bar draining.</p></div>
-    <div class="feat"><div class="icon">💥</div><h3>Hit & damage counters</h3><p>A running counter tracks hits landed and total damage dealt, live on screen as the fight plays.</p></div>
-    <div class="feat"><div class="icon">🎨</div><h3>Custom names & colors</h3><p>Every fighter gets a name label and a color, so viewers always know who's winning at a glance.</p></div>
-    <div class="feat"><div class="icon">🖼️</div><h3>Custom ball image</h3><p>Drop in a logo, a face, or an emoji instead of a plain color — great for brand or fan-vs-fan clips.</p></div>
-    <div class="feat"><div class="icon">🔊</div><h3>Impact sound</h3><p>Each hit triggers a sound cue, so the fight has an audio rhythm even before you add music.</p></div>
-    <div class="feat"><div class="icon">🎬</div><h3>Vertical export</h3><p>Render straight to 1080×1920 MP4, 10–120 seconds, ready to drop into TikTok, Reels, or Shorts.</p></div>
+  <div class="bento">
+    <div class="card b-wide reveal">
+      <div class="f-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#FF4F8B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></div>
+      <h3>Damage that escalates</h3>
+      <p>Choose how each fighter's hits grow: Fibonacci, squares, Catalan, doubling and more. Slow starts that turn into brutal finishes keep viewers watching.</p>
+      <div class="seq"><span>1</span><span>1</span><span>2</span><span>3</span><span>5</span><span>8</span><span>13</span><span>21</span><span>34</span></div>
+      <div class="seq-label">Fibonacci: damage per hit</div>
+    </div>
+    <div class="card b-narrow reveal">
+      <div class="f-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#3BE7FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="9" width="5" height="6" rx="1.5"/><rect x="10" y="9" width="5" height="6" rx="1.5"/><rect x="17" y="9" width="4" height="6" rx="1.5"/></svg></div>
+      <h3>Multi-stage health</h3>
+      <p>Split HP into several bars so every fight has visible turning points.</p>
+      <div class="hp-demo">
+        <div class="row"><span style="color:var(--a)">A</span><div class="bars"><i><b style="background:var(--a)"></b></i><i><b style="background:var(--a);right:38%"></b></i><i></i></div></div>
+        <div class="row"><span style="color:var(--b)">B</span><div class="bars"><i><b style="background:var(--b);right:70%"></b></i><i></i><i></i></div></div>
+      </div>
+    </div>
+    <div class="card b-third reveal">
+      <div class="f-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#8E6BFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 010 7M19 5a10 10 0 010 14"/></svg></div>
+      <h3>Your own hit sounds</h3>
+      <p>Upload an MP3 for each fighter, or keep the punchy default, so the fight has rhythm before you add music.</p>
+    </div>
+    <div class="card b-third reveal">
+      <div class="f-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#7CF2B0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+      <h3>Live damage pop-ups</h3>
+      <p>Every hit flashes its damage on screen, so viewers feel the momentum shift as it happens.</p>
+    </div>
+    <div class="card b-third reveal">
+      <div class="f-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#FFC24D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/></svg></div>
+      <h3>Vertical export</h3>
+      <p>Record straight to MP4 in the format the feeds want.</p>
+      <div class="export-badge"><strong>1080×1920</strong><span>9:16</span></div>
+    </div>
+    <div class="card b-full bg-feature reveal">
+      <div>
+        <div class="f-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#FF4F8B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 100 18c1 0 1.6-.8 1.6-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.8-1.7 1.7-1.7H16a5 5 0 005-5c0-4-4-7.2-9-7.2z"/><circle cx="7.5" cy="10.5" r="1"/><circle cx="10.5" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/></svg></div>
+        <h3>Your arena, your colours</h3>
+        <p>Pick one of six ready-made backgrounds for free, or go Pro and use any colour you like. Match your brand, your channel or the mood of the fight. Try it here and watch the previews above change.</p>
+      </div>
+      <div class="bg-demo">
+        <div class="bg-dots" id="bgDemo" role="group" aria-label="Preview background colours"></div>
+        <div class="bg-demo-label">Background: <b id="bgDemoName">Classic</b></div>
+      </div>
+    </div>
   </div>
 </section>
 
 <section id="pricing" class="wrap">
-  <div class="section-head">
-    <h2>Start free, upgrade when you're posting daily</h2>
-    <p>Every plan runs in your browser. Nothing to install.</p>
+  <div class="section-head center reveal">
+    <div class="eyebrow">Pricing</div>
+    <h2>Try it free. <span class="serif grad-text">Go Pro when you're hooked.</span></h2>
+    <p>Everything runs in your browser. Cancel anytime.</p>
   </div>
   <div class="price-grid">
-    <div class="price-card">
-      <h3>Free</h3>
-      <div class="price-amount">0 €<span>/month</span></div>
+    <div class="card price-card reveal">
+      <div class="price-top"><h3>Free trial</h3></div>
+      <div class="price-amount">0 €<span>3 clips free</span></div>
+      <p class="price-desc">Try every feature with your first 3 clips. No time limit.</p>
       <ul class="price-list">
-        <li>1v1 Duel and Underdog modes</li>
-        <li>Standard health bars & colors</li>
-        <li>720p export with watermark</li>
-        <li>Up to 30 second clips</li>
-        <li>Up to 7 clips</li>
+        <li>All live modes: Duel, Free-for-all and Boss Fight</li>
+        <li>All damage growth options and multi-stage HP</li>
+        <li>6 background colours</li>
+        <li>3 recorded clips, no time limit</li>
+        <li>1080×1920 export</li>
+        <li class="off">ClashBalls watermark</li>
+        <li class="off">Pro features locked</li>
       </ul>
-      <button class="btn-light pricing-cta open-signup-trigger">Start Free</button>
+      <a href="simulator.html" class="btn btn-ghost btn-block">Try it free</a>
     </div>
-    <div class="price-card pro">
-      <h3>Pro</h3>
-      <div class="price-amount">14 €<span>/month</span></div>
+    <div class="card price-card pro reveal">
+      <div class="price-top"><h3>Pro</h3><span class="badge">Best for creators</span></div>
+      <div class="billing-toggle" role="radiogroup" aria-label="Billing period">
+        <button type="button" class="bt-opt" data-interval="month" role="radio" aria-checked="false">Monthly</button>
+        <button type="button" class="bt-opt active" data-interval="year" role="radio" aria-checked="true">Yearly <span class="bt-save">−41%</span></button>
+      </div>
+      <div class="price-amount" id="proPrice">99 €<span>/ year</span></div>
+      <p class="price-desc" id="proDesc">≈ 8.25 € a month, billed yearly. For creators who post every day.</p>
       <ul class="price-list">
-        <li>All battle modes, including Boss Fight & Tournament</li>
-        <li>Multi-stage health bars & custom ball images</li>
-        <li>1080×1920 export, no watermark</li>
-        <li>Up to 120 second clips</li>
-        <li>Save unlimited fighter presets</li>
+        <li>Everything in the free trial</li>
+        <li>Unlimited clips</li>
+        <li>No watermark</li>
+        <li>Any background colour</li>
+        <li>Speed &amp; size change with every hit</li>
+        <li>New modes as soon as they launch</li>
       </ul>
-      <button class="btn-primary pricing-cta open-signup-trigger">Go Pro</button>
+      <a href="simulator.html?upgrade=year" class="btn btn-primary btn-block" id="proCta">Go Pro yearly <span class="arrow">→</span></a>
     </div>
+  </div>
+  <div class="referral reveal">
+    <span class="gift"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF4F8B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v9H5v-9M7.5 8a2.5 2.5 0 010-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 010 5"/></svg></span>
+    <p><strong>Refer a friend, get 50% off.</strong> When someone signs up with your link and goes Pro, your next payment is automatically 50% off.</p>
   </div>
 </section>
 
 <section id="faq" class="wrap">
-  <div class="section-head">
-    <h2>Frequently asked questions</h2>
-  </div>
-  <div class="faq-list">
-    <div class="faq-item">
-      <button class="faq-q">Do I need an account to try it?<span class="plus">+</span></button>
-      <div class="faq-a"><p>Yes. Sign up for the free trial to unlock the builder — it takes a few seconds and gives you 3 days with up to 7 exported clips.</p></div>
+  <div class="faq-layout">
+    <div class="section-head reveal">
+      <div class="eyebrow">FAQ</div>
+      <h2>Questions, <span class="serif grad-text">answered.</span></h2>
+      <p>Missing something? <a href="#contact" style="color:var(--text);text-decoration:underline;text-underline-offset:3px;">Send us a message.</a></p>
     </div>
-    <div class="faq-item">
-      <button class="faq-q">Can I use the clips commercially?<span class="plus">+</span></button>
-      <div class="faq-a"><p>Yes. Anything you export, on any plan, is yours to post, monetize, or use commercially.</p></div>
-    </div>
-    <div class="faq-item">
-      <button class="faq-q">Does it work on mobile?<span class="plus">+</span></button>
-      <div class="faq-a"><p>Yes, the builder is fully responsive, though the desktop layout gives you more room to fine-tune settings.</p></div>
-    </div>
-    <div class="faq-item">
-      <button class="faq-q">Can I save a fighter setup and reuse it?<span class="plus">+</span></button>
-      <div class="faq-a"><p>Pro plans can save unlimited presets — names, colors, and damage settings — so a daily series stays consistent.</p></div>
+    <div class="faq-list reveal">
+      <details class="faq-item">
+        <summary>Do I need an account to try it?<span class="plus"></span></summary>
+        <div class="faq-a">No. Open the builder and start building right away. You only need a free account when you want to record. Your first 3 clips are free, no credit card required.</div>
+      </details>
+      <details class="faq-item">
+        <summary>What does Pro cost?<span class="plus"></span></summary>
+        <div class="faq-a">14 € a month, or 99 € a year (about 8.25 € a month). Both include unlimited clips without a watermark, any background colour and per-hit speed and size changes. You can cancel anytime.</div>
+      </details>
+      <details class="faq-item">
+        <summary>What happens after my 3 free clips?<span class="plus"></span></summary>
+        <div class="faq-a">You can keep building and previewing battles, but recording is locked until you upgrade to Pro. Pro gives you unlimited clips without a watermark for 14 € a month, and you can cancel anytime.</div>
+      </details>
+      <details class="faq-item">
+        <summary>Can I use the clips commercially?<span class="plus"></span></summary>
+        <div class="faq-a">Yes. Anything you export is yours to post, monetize or use commercially.</div>
+      </details>
+      <details class="faq-item">
+        <summary>Does it work on mobile?<span class="plus"></span></summary>
+        <div class="faq-a">Yes, the builder runs in any modern browser. On desktop you get more room to fine-tune settings.</div>
+      </details>
+      <details class="faq-item">
+        <summary>Which browsers support recording?<span class="plus"></span></summary>
+        <div class="faq-a">Recording works best in current versions of Chrome, Edge and Firefox. Clips are converted to MP4 right in your browser.</div>
+      </details>
     </div>
   </div>
 </section>
 
 <section id="contact" class="wrap">
-  <div class="section-head">
-    <h2>Got feedback?</h2>
-    <p>Bugs, feature requests, anything — send it straight to us.</p>
+  <div class="card contact-card reveal">
+    <div>
+      <div class="eyebrow">Feedback</div>
+      <h2>Got an idea or <span class="serif grad-text">found a bug?</span></h2>
+      <p class="lead">Feature requests, bugs, or just a hello. Every message goes straight to us.</p>
+    </div>
+    <form id="contactForm" class="contact-form" action="https://formspree.io/f/xrpbezjk" method="POST">
+      <div class="row-2">
+        <div class="field">
+          <label for="contact-name">Name</label>
+          <input type="text" id="contact-name" name="name" required autocomplete="name">
+        </div>
+        <div class="field">
+          <label for="contact-email">Email</label>
+          <input type="email" id="contact-email" name="email" required autocomplete="email">
+        </div>
+      </div>
+      <div class="field">
+        <label for="contact-message">Message</label>
+        <textarea id="contact-message" name="message" rows="5" required placeholder="Bug report, idea, anything on your mind…"></textarea>
+      </div>
+      <button type="submit" class="btn btn-light" id="contactSubmitBtn">Send message</button>
+      <p class="modal-error" id="contact-error">Please fill in every field.</p>
+      <p class="contact-success" id="contact-success">Thanks, your message is on its way. We'll get back to you.</p>
+    </form>
   </div>
-  <form id="contactForm" class="contact-form" action="https://formspree.io/f/xrpbezjk" method="POST">
-    <div class="row-2">
-      <div class="field">
-        <label for="contact-name">Name</label>
-        <input type="text" id="contact-name" name="name" required autocomplete="name">
-      </div>
-      <div class="field">
-        <label for="contact-email">Email</label>
-        <input type="email" id="contact-email" name="email" required autocomplete="email">
-      </div>
-    </div>
-    <div class="field">
-      <label for="contact-message">Message</label>
-      <textarea id="contact-message" name="message" rows="5" required placeholder="Bug report, idea, anything on your mind..."></textarea>
-    </div>
-    <button type="submit" class="btn-primary" id="contactSubmitBtn">Send message</button>
-    <p class="modal-error" id="contact-error">Please fill in every field.</p>
-    <p class="contact-success" id="contact-success">Thanks — message sent. We'll get back to you.</p>
-  </form>
 </section>
+
+<div class="wrap">
+  <div class="final-cta reveal">
+    <h2>Your next viral clip<br><span class="serif grad-text">starts with two balls.</span></h2>
+    <p>Open the builder, no sign-up needed. Your first 3 clips are free.</p>
+    <a href="simulator.html" class="btn btn-primary">Build a battle free <span class="arrow">→</span></a>
+  </div>
+</div>
 
 <footer class="wrap">
   <div class="footer-inner">
-    <div>© 2026 ClashArena</div>
+    <a href="#" class="logo"><span class="logo-mark"><i></i><i></i></span>ClashBalls</a>
     <div class="footer-links">
-      <a href="#">About</a>
-      <a href="#">Blog</a>
+      <a href="#contact">Feedback</a>
       <a href="#">Privacy</a>
       <a href="#">Terms</a>
-      <a href="#">Feedback</a>
+      <a href="#">Imprint</a>
     </div>
+    <div>© 2026 ClashBalls</div>
   </div>
 </footer>
 
-<div class="modal-overlay" id="authModal">
+<div class="modal-overlay" id="authModal" role="dialog" aria-modal="true">
   <div class="modal-card">
     <button class="modal-close" id="modalClose" aria-label="Close">×</button>
 
     <div id="modalForms">
       <div class="modal-tabs">
-        <button class="modal-tab active" data-pane="signup">Sign Up</button>
-        <button class="modal-tab" data-pane="login">Log In</button>
+        <button class="modal-tab active" data-pane="signup">Sign up</button>
+        <button class="modal-tab" data-pane="login">Log in</button>
       </div>
 
       <div class="form-pane active" id="pane-signup">
         <h2>Create your account</h2>
-        <p class="modal-sub">Save fighter presets and export your battles.</p>
+        <p class="modal-sub">Get 3 free clips. No credit card required.</p>
         <form id="signupForm">
           <div class="field">
             <label for="su-name">Name</label>
@@ -577,9 +754,9 @@
           </div>
           <div class="field">
             <label for="su-password">Password</label>
-            <input type="password" id="su-password" required minlength="8" autocomplete="new-password">
+            <input type="password" id="su-password" required minlength="8" autocomplete="new-password" placeholder="At least 8 characters">
           </div>
-          <button type="submit" class="modal-submit">Create Account</button>
+          <button type="submit" class="btn btn-primary modal-submit">Create account</button>
           <p class="modal-error" id="su-error">Please fill in every field (password: 8+ characters).</p>
         </form>
       </div>
@@ -596,14 +773,14 @@
             <label for="li-password">Password</label>
             <input type="password" id="li-password" required autocomplete="current-password">
           </div>
-          <button type="submit" class="modal-submit">Log In</button>
+          <button type="submit" class="btn btn-primary modal-submit">Log in</button>
           <p class="modal-error" id="li-error">Please enter your email and password.</p>
         </form>
       </div>
     </div>
 
     <div class="modal-success" id="modalSuccess">
-      <div class="icon">🥊</div>
+      <div class="icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
       <h2 id="successHeading">You're in</h2>
       <p id="successSub">Your account is ready. Time to build a battle.</p>
     </div>
@@ -611,16 +788,382 @@
 </div>
 
 <script>
-document.querySelectorAll('.faq-q').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    btn.parentElement.classList.toggle('open');
+/* ================= Ticker ================= */
+(function(){
+  const pairs = [['CATS','DOGS'],['PIZZA','SUSHI'],['MONDAY','FRIDAY'],['COFFEE','TEA'],['SUMMER','WINTER'],['NIGHT OWL','EARLY BIRD'],['BLAZE','FROST'],['TEAM RED','TEAM BLUE']];
+  const html = pairs.map(([a,b]) => '<div class="ticker-item">'+a+' <span class="vs">vs</span> '+b+'<span class="sep"></span></div>').join('');
+  document.getElementById('tickerTrack').innerHTML = html + html;
+})();
+
+/* ================= Pricing: monthly / yearly ================= */
+(function(){
+  const PRICES = {
+    month: { price: '14 €<span>/ month</span>', desc: 'Billed monthly, cancel anytime. For creators who post every day.', cta: 'Go Pro monthly' },
+    year:  { price: '99 €<span>/ year</span>',  desc: '≈ 8.25 € a month, billed yearly. For creators who post every day.', cta: 'Go Pro yearly' },
+  };
+  const opts = document.querySelectorAll('.bt-opt');
+  opts.forEach(o => o.addEventListener('click', () => {
+    const k = o.dataset.interval, p = PRICES[k];
+    opts.forEach(x => { const on = x === o; x.classList.toggle('active', on); x.setAttribute('aria-checked', on); });
+    document.getElementById('proPrice').innerHTML = p.price;
+    document.getElementById('proDesc').textContent = p.desc;
+    const cta = document.getElementById('proCta');
+    cta.href = 'simulator.html?upgrade=' + k;
+    cta.innerHTML = p.cta + ' <span class="arrow">→</span>';
+  }));
+})();
+
+/* ================= Mobile menu ================= */
+(function(){
+  const nav = document.getElementById('nav');
+  const toggle = document.getElementById('menuToggle');
+  toggle.addEventListener('click', () => {
+    const open = nav.classList.toggle('menu-open');
+    toggle.setAttribute('aria-expanded', open);
   });
-});
+  document.querySelectorAll('#mobileMenu a').forEach(a => a.addEventListener('click', () => {
+    nav.classList.remove('menu-open'); toggle.setAttribute('aria-expanded', false);
+  }));
+})();
+
+/* ================= Reveal on scroll ================= */
+(function(){
+  const els = document.querySelectorAll('.reveal');
+  if(!('IntersectionObserver' in window)){ els.forEach(e=>e.classList.add('in')); return; }
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(en => { if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+  els.forEach((e,i) => { e.style.transitionDelay = (i % 3) * 80 + 'ms'; io.observe(e); });
+})();
+
+/* ================= Mode previews (same look & physics as the builder) ================= */
+(function(){
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const fmt = n => Math.max(0, Math.round(n)).toLocaleString('en-US');
+  const dmgDouble = (base, n) => Math.max(1, Math.round(base * Math.pow(2, n - 1)));
+
+  // Background themes. "Classic" is the builder's current beige; the rest preview custom backgrounds.
+  const THEMES = [
+    { name: 'Classic',  outer: '#e9ddc4', arena: '#fdfaf2', ink: '#111111', border: '#000000', hud: '#3a3428', track: 'rgba(0,0,0,0.15)' },
+    { name: 'Mint',     outer: '#c9ecd9', arena: '#f2fbf6', ink: '#0f2a1d', border: '#000000', hud: '#1f4a35', track: 'rgba(0,0,0,0.13)' },
+    { name: 'Lavender', outer: '#dcd5f5', arena: '#f7f5fe', ink: '#1d1640', border: '#000000', hud: '#3b3168', track: 'rgba(0,0,0,0.13)' },
+    { name: 'Midnight', outer: '#14151d', arena: '#222536', ink: '#f3f3f7', border: '#000000', hud: '#c9cad6', track: 'rgba(255,255,255,0.14)' },
+    { name: 'Sky',      outer: '#cde3f6', arena: '#f3f9fe', ink: '#0d2338', border: '#000000', hud: '#25425e', track: 'rgba(0,0,0,0.13)' },
+    { name: 'Peach',    outer: '#f7d8c6', arena: '#fff6f0', ink: '#3a1a0c', border: '#000000', hud: '#6b3a22', track: 'rgba(0,0,0,0.13)' },
+  ];
+
+  function setup(canvas, w, h){
+    canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return ctx;
+  }
+  function ball(ctx, x, y, r, color, name){
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = color; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = '#000'; ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.font = '900 ' + Math.round(Math.max(12, r * 0.8)) + 'px Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(name.charAt(0), x, y + 1);
+  }
+  function banner(ctx, w, h, text, color){
+    ctx.fillStyle = 'rgba(8,9,12,0.55)'; ctx.fillRect(0, h / 2 - 24, w, 48);
+    ctx.fillStyle = color; ctx.font = '900 20px Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(text, w / 2, h / 2);
+  }
+
+  /* ---------- Duel: two stacked arenas, balls bounce on their own health bars ---------- */
+  function Duel(canvas, opts){
+    const W = 420, LABEL_H = 32, ARENA_H = 190, BAR_H = 34, TIERS = 3, CHECKER_H = 10, VS_H = 34;
+    const BLOCK = LABEL_H + ARENA_H + BAR_H * TIERS + CHECKER_H;
+    const H = BLOCK * 2 + VS_H;
+    const CH = W * 16 / 9, OFF = (CH - H) / 2;   // 9:16 frame, same as the builder export
+    const ctx = setup(canvas, W, CH);
+    const GRAVITY = 0.22, BOUNCE_VY = 9, SPEED = 2.6;
+    let fs, popups, winner, endT;
+
+    function make(name, color, y0, speed, dmg){
+      const a = Math.random() * Math.PI * 2;
+      return { name, color, speed, dmg, x: W / 2 + (Math.random() - 0.5) * 120, y: y0 + LABEL_H + ARENA_H / 2,
+        vx: Math.cos(a) * SPEED * speed, vy: Math.sin(a) * SPEED * speed, r: 15,
+        bars: [1000, 1000, 1000], hits: 0, y0, done: false };
+    }
+    function reset(){
+      const s1 = 0.9 + Math.random() * 0.5, s2 = 0.9 + Math.random() * 0.5;
+      fs = [make('BLAZE', '#ff3b5c', 0, s1, 10), make('FROST', '#22d3ee', BLOCK + VS_H, s2, 10)];
+      popups = []; winner = null; endT = 0;
+    }
+    const active = f => { for(let i = 0; i < f.bars.length; i++) if(f.bars[i] > 0) return i; return f.bars.length; };
+    const empty = f => f.bars.every(h => h <= 0);
+    const arenaTop = f => f.y0 + LABEL_H;
+    const floor = f => arenaTop(f) + ARENA_H + (empty(f) ? TIERS * BAR_H + CHECKER_H : active(f) * BAR_H);
+
+    function step(f, dt){
+      const fl = floor(f), x0 = 10, x1 = W - 10, y0 = arenaTop(f) + 8, y1 = fl - 8;
+      f.vy += GRAVITY * dt; f.x += f.vx * dt; f.y += f.vy * dt;
+      if(f.x - f.r < x0){ f.x = x0 + f.r; f.vx *= -1; }
+      if(f.x + f.r > x1){ f.x = x1 - f.r; f.vx *= -1; }
+      if(f.y - f.r < y0){ f.y = y0 + f.r; f.vy *= -1; }
+      if(f.y + f.r > y1){
+        f.y = y1 - f.r;
+        if(!empty(f)){
+          f.vy = -BOUNCE_VY * Math.sqrt(f.speed);
+          f.hits++;
+          const d = dmgDouble(f.dmg, f.hits);
+          for(let i = 0; i < f.bars.length; i++){ if(f.bars[i] > 0){ f.bars[i] = Math.max(0, f.bars[i] - d); break; } }
+          popups.push({ x: f.x, y: f.y, text: '-' + fmt(d), color: f.color, age: 0 });
+          if(opts.onHit) opts.onHit(d, f);
+        } else {
+          f.vy = 0;
+          if(!f.done){ f.done = true; if(!winner) winner = f; }
+        }
+      }
+    }
+    function update(dt){
+      if(winner){ endT += dt; if(endT > 140){ reset(); return 'reset'; } return; }
+      fs.forEach(f => step(f, dt));
+      for(let i = popups.length - 1; i >= 0; i--){ popups[i].age += dt; if(popups[i].age > 36) popups.splice(i, 1); }
+    }
+    function drawFighter(f, T){
+      const top = f.y0;
+      ctx.fillStyle = f.color; ctx.font = '900 17px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(f.name, W / 2, top + LABEL_H / 2);
+      const at = arenaTop(f), fl = floor(f);
+      ctx.fillStyle = T.arena; ctx.fillRect(0, at, W, fl - at);
+      ctx.strokeStyle = T.border; ctx.lineWidth = 2; ctx.strokeRect(1, at + 1, W - 2, fl - at - 2);
+      ctx.save(); ctx.beginPath(); ctx.rect(0, at, W, fl - at); ctx.clip();
+      ball(ctx, f.x, f.y, f.r, f.color, f.name);
+      popups.forEach(p => {
+        if(p.color !== f.color) return;
+        ctx.globalAlpha = Math.max(0, 1 - p.age / 36);
+        ctx.fillStyle = f.color; ctx.font = 'bold 13px Arial'; ctx.textAlign = 'center';
+        ctx.fillText(p.text, p.x, p.y - p.age * 0.6);
+        ctx.globalAlpha = 1;
+      });
+      ctx.restore();
+      const ai = active(f), base = at + ARENA_H + ai * BAR_H;
+      for(let i = ai; i < f.bars.length; i++){
+        const y0 = base + (i - ai) * BAR_H;
+        ctx.fillStyle = f.color; ctx.fillRect(0, y0, W, BAR_H);
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5; ctx.strokeRect(0.5, y0 + 0.5, W - 1, BAR_H - 1);
+        ctx.fillStyle = '#fff'; ctx.font = '900 15px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(fmt(f.bars[i]), W / 2, y0 + BAR_H / 2);
+      }
+      const cy = at + ARENA_H + TIERS * BAR_H; let flip = false;
+      for(let x = 0; x < W; x += 12){ ctx.fillStyle = flip ? '#fff' : '#111'; ctx.fillRect(x, cy, 12, CHECKER_H); flip = !flip; }
+    }
+    function draw(T){
+      ctx.fillStyle = T.outer; ctx.fillRect(0, 0, W, CH);
+      ctx.save(); ctx.translate(0, OFF);
+      drawFighter(fs[0], T);
+      if(!winner){ // hide VS behind the winner banner so the text stays readable
+        ctx.fillStyle = T.ink; ctx.font = '900 18px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('VS', W / 2, BLOCK + VS_H / 2);
+      }
+      drawFighter(fs[1], T);
+      if(winner) banner(ctx, W, H, winner.name + ' WINS', winner.color);
+      ctx.restore();
+    }
+    reset();
+    return { update, draw, warm: 260 };
+  }
+
+  /* ---------- Free-for-all / Boss Fight: one open arena + health HUD ---------- */
+  function Multi(canvas, boss){
+    const W = 440, AH = 460;
+    // HP is lower than the builder defaults so a preview round finishes in a few seconds.
+    const configs = boss
+      ? [{ name: 'TITAN', color: '#ff3b5c', hp: 2500, dmg: 50, speed: 0.7, isBoss: true }]
+          .concat([1, 2, 3, 4].map(i => ({ name: 'MINION ' + i, color: '#22d3ee', hp: 300, dmg: 10, speed: 1.2 })))
+      : [['BLAZE', '#ff3b5c'], ['FROST', '#22d3ee'], ['VOLT', '#ffc94a'], ['NOVA', '#7f77dd'], ['VIPER', '#63c93a']]
+          .map(([name, color]) => ({ name, color, hp: 160, dmg: 10, speed: 1 }));
+    const CH = W * 16 / 9, ARENA_Y = CH - AH - 26, HUD_Y0 = 24, HUD_Y1 = ARENA_Y - 18;
+    const ctx = setup(canvas, W, CH);
+    const KICK = 6.5, BOUNCE = 0.98;
+    let fs, popups, winner, endT;
+
+    function reset(){
+      fs = configs.map(c => {
+        const a = Math.random() * Math.PI * 2, spd = 2.4 * c.speed;
+        return Object.assign({}, c, { maxHp: c.hp, r: c.isBoss ? 42 : 16, x: 0, y: 0,
+          vx: Math.cos(a) * spd, vy: Math.sin(a) * spd, hits: 0, alive: true, fade: 0, contacts: new Set() });
+      });
+      const placed = [];
+      [...fs].sort((a, b) => b.r - a.r).forEach(f => {
+        let ok = false;
+        for(let t = 0; t < 300 && !ok; t++){
+          f.x = f.r + 10 + Math.random() * (W - 2 * (f.r + 10));
+          f.y = f.r + 10 + Math.random() * (AH - 2 * (f.r + 10));
+          ok = placed.every(p => Math.hypot(p.x - f.x, p.y - f.y) >= p.r + f.r + 14);
+        }
+        placed.push(f);
+      });
+      popups = []; winner = null; endT = 0;
+    }
+    function collide(a, b){
+      if(!a.alive || !b.alive) return;
+      const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy), min = a.r + b.r;
+      if(d >= min){ a.contacts.delete(b); b.contacts.delete(a); return; }
+      if(d === 0) return;
+      const nx = dx / d, ny = dy / d, ov = min - d, ma = a.r * a.r, mb = b.r * b.r;
+      a.x -= nx * ov * (mb / (ma + mb)); a.y -= ny * ov * (mb / (ma + mb));
+      b.x += nx * ov * (ma / (ma + mb)); b.y += ny * ov * (ma / (ma + mb));
+      const va = a.vx * nx + a.vy * ny, vb = b.vx * nx + b.vy * ny;
+      a.vx += -va * nx - KICK * (mb / (ma + mb)) * nx; a.vy += -va * ny - KICK * (mb / (ma + mb)) * ny;
+      b.vx += -vb * nx + KICK * (ma / (ma + mb)) * nx; b.vy += -vb * ny + KICK * (ma / (ma + mb)) * ny;
+      if(boss && !a.isBoss && !b.isBoss) return;
+      if(a.contacts.has(b)) return;
+      a.contacts.add(b); b.contacts.add(a);
+      a.hits++; b.hits++;
+      const da = dmgDouble(a.dmg, a.hits), db = dmgDouble(b.dmg, b.hits);
+      b.hp = Math.max(0, b.hp - da); a.hp = Math.max(0, a.hp - db);
+      popups.push({ x: b.x, y: b.y, text: '-' + fmt(da), color: a.color, age: 0 });
+      popups.push({ x: a.x, y: a.y, text: '-' + fmt(db), color: b.color, age: 0 });
+      if(b.hp <= 0) b.alive = false;
+      if(a.hp <= 0) a.alive = false;
+    }
+    function update(dt){
+      if(winner !== null){ endT += dt; if(endT > 140){ reset(); return 'reset'; } return; }
+      fs.forEach(f => {
+        if(!f.alive){ f.fade += dt; return; }
+        f.x += f.vx * dt; f.y += f.vy * dt;
+        const x0 = f.r + 6, x1 = W - f.r - 6, y0 = f.r + 6, y1 = AH - f.r - 6;
+        if(f.x < x0){ f.x = x0; f.vx = Math.abs(f.vx) * BOUNCE; }
+        if(f.x > x1){ f.x = x1; f.vx = -Math.abs(f.vx) * BOUNCE; }
+        if(f.y < y0){ f.y = y0; f.vy = Math.abs(f.vy) * BOUNCE; }
+        if(f.y > y1){ f.y = y1; f.vy = -Math.abs(f.vy) * BOUNCE; }
+      });
+      for(let i = 0; i < fs.length; i++) for(let j = i + 1; j < fs.length; j++) collide(fs[i], fs[j]);
+      for(let i = popups.length - 1; i >= 0; i--){ popups[i].age += dt; if(popups[i].age > 36) popups.splice(i, 1); }
+      const alive = fs.filter(f => f.alive);
+      if(alive.length <= 1) winner = alive[0] || false;
+    }
+    function txt(t, x, y, size, align){
+      ctx.font = '900 ' + size + 'px Arial'; ctx.textAlign = align; ctx.textBaseline = 'middle';
+      ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(3, size * 0.28); ctx.strokeStyle = '#000';
+      ctx.strokeText(t, x, y); ctx.fillStyle = '#fff'; ctx.fillText(t, x, y);
+    }
+    function bar(T, f, x, y, w, h, label, size){
+      ctx.globalAlpha = f.alive ? 1 : 0.35;
+      ctx.fillStyle = T.track; ctx.fillRect(x, y, w, h);
+      const fw = w * Math.max(0, f.hp) / f.maxHp;
+      if(fw > 0){ ctx.fillStyle = f.color; ctx.fillRect(x, y, fw, h); }
+      ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5; ctx.strokeRect(x + 0.75, y + 0.75, w - 1.5, h - 1.5);
+      const pad = Math.min(10, h * 0.35);
+      if(label) txt(label, x + pad, y + h / 2 + 1, size, 'left');
+      txt(fmt(f.hp), x + w - pad, y + h / 2 + 1, size, label ? 'right' : 'center');
+      ctx.globalAlpha = 1;
+    }
+    function hud(T){
+      const x = 12, w = W - 24, avail = HUD_Y1 - HUD_Y0;
+      if(boss){
+        const b = fs[0], ms = fs.slice(1), cols = Math.min(5, ms.length), rows = Math.ceil(ms.length / cols);
+        const blockH = 50 + 18 + 22 + rows * 26 + (rows - 1) * 8;
+        let y = HUD_Y0 + Math.max(0, (avail - blockH) / 2);
+        bar(T, b, x, y, w, 50, b.name, 18); y += 68;
+        ctx.fillStyle = T.ink; ctx.font = '900 13px Arial'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText(ms.length + ' × MINION', x, y + 8); y += 22;
+        const cw = (w - (cols - 1) * 8) / cols;
+        ms.forEach((m, i) => bar(T, m, x + (i % cols) * (cw + 8), y + Math.floor(i / cols) * 34, cw, 26, null, 12));
+        return;
+      }
+      const n = fs.length, rowH = Math.min(56, (avail - (n - 1) * 10) / n), size = Math.round(Math.min(20, rowH * 0.42));
+      let y = HUD_Y0 + Math.max(0, (avail - (n * rowH + (n - 1) * 10)) / 2);
+      fs.forEach(f => { bar(T, f, x, y, w, rowH, f.name, size); y += rowH + 10; });
+    }
+    function draw(T){
+      ctx.fillStyle = T.outer; ctx.fillRect(0, 0, W, CH);
+      hud(T);
+      ctx.save(); ctx.translate(0, ARENA_Y);
+      // same as the builder: background colour frames the arena
+      ctx.fillStyle = T.arena; ctx.fillRect(6, 6, W - 12, AH - 12);
+      ctx.strokeStyle = T.border; ctx.lineWidth = 2; ctx.strokeRect(6, 6, W - 12, AH - 12);
+      ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, AH); ctx.clip();
+      fs.forEach(f => {
+        if(!f.alive){ const a = Math.max(0, 1 - f.fade / 40); if(a <= 0) return; ctx.globalAlpha = a; }
+        ball(ctx, f.x, f.y, f.r, f.color, f.name);
+        ctx.globalAlpha = 1;
+      });
+      popups.forEach(p => {
+        ctx.globalAlpha = Math.max(0, 1 - p.age / 36);
+        ctx.fillStyle = p.color; ctx.font = 'bold 13px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+        ctx.fillText(p.text, p.x, p.y - p.age * 0.6);
+        ctx.globalAlpha = 1;
+      });
+      if(winner) banner(ctx, W, AH, winner.name + ' WINS', winner.color);
+      ctx.restore();
+      ctx.restore();
+    }
+    reset();
+    return { update, draw, warm: boss ? 220 : 120 };
+  }
+
+  const previewSetters = [];
+  const heroChip = document.getElementById('chipDmg');
+  const heroTheme = document.getElementById('chipTheme');
+
+  document.querySelectorAll('.mode-canvas').forEach(canvas => {
+    const mode = canvas.dataset.mode;
+    const isHero = canvas.classList.contains('hero-canvas');
+    const onHit = isHero && heroChip ? (d, f) => { if(f.name === 'BLAZE') heroChip.textContent = '-' + fmt(d) + ' DMG'; } : null;
+    const sim = mode === 'duel' ? Duel(canvas, { onHit }) : Multi(canvas, mode === 'boss');
+    const box = canvas.parentElement;
+    let themeIdx = parseInt(canvas.dataset.theme || '0', 10) % THEMES.length;
+    const applyTheme = () => {
+      box.style.background = THEMES[themeIdx].outer;
+      if(isHero && heroTheme){ heroTheme.textContent = THEMES[themeIdx].name; const sw = document.getElementById('chipSwatch'); if(sw) sw.style.background = THEMES[themeIdx].outer; }
+    };
+    applyTheme();
+    previewSetters.push(i => { themeIdx = i; applyTheme(); sim.draw(THEMES[themeIdx]); });
+    // start mid-fight so the static frame already shows some action
+    for(let i = 0; i < sim.warm; i++) sim.update(1);
+    sim.draw(THEMES[themeIdx]);
+    if(reduce) return;
+    let running = false, last = 0;
+    function frame(ts){
+      if(!running) return;
+      const dt = last ? Math.min(Math.max((ts - last) / (1000 / 60), 0), 3) : 1;
+      last = ts;
+      // every new round switches to the next background colour
+      if(sim.update(dt) === 'reset'){ themeIdx = (themeIdx + 1) % THEMES.length; applyTheme(); }
+      sim.draw(THEMES[themeIdx]);
+      requestAnimationFrame(frame);
+    }
+    new IntersectionObserver(([e]) => {
+      if(e.isIntersecting && !running){ running = true; last = 0; requestAnimationFrame(frame); }
+      else if(!e.isIntersecting) running = false;
+    }).observe(canvas);
+  });
+
+  // "Your arena, your colours" demo: clicking a swatch recolours every preview on the page
+  const demo = document.getElementById('bgDemo');
+  if(demo){
+    const name = document.getElementById('bgDemoName');
+    const dots = THEMES.map((t, i) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'bg-dot' + (i === 0 ? ' active' : '');
+      b.title = t.name; b.setAttribute('aria-label', t.name + ' background');
+      b.style.background = 'linear-gradient(135deg,' + t.outer + ' 50%,' + t.arena + ' 50%)';
+      b.addEventListener('click', () => {
+        dots.forEach(d => d.classList.toggle('active', d === b));
+        name.textContent = t.name;
+        previewSetters.forEach(set => set(i));
+      });
+      demo.appendChild(b);
+      return b;
+    });
+    const custom = document.createElement('span');
+    custom.className = 'bg-dot rainbow'; custom.title = 'Any colour you like (Pro)';
+    demo.appendChild(custom);
+  }
+})();
 
 // ---------- Supabase auth ----------
 const SUPABASE_URL = 'https://wqujciipjjcqwqdwnguq.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxdWpjaWlwampjcXdxZHduZ3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NDkzNTAsImV4cCI6MjEwNTEyNTM1MH0.zGrSGjs5Gdlwy-yJieHuhL9PjMcdYDgtDMi5DUy3ECM';
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 const authModal   = document.getElementById('authModal');
 const modalForms  = document.getElementById('modalForms');
@@ -642,6 +1185,7 @@ function openModal(pane){
   document.getElementById('li-error').style.display = 'none';
   setActivePane(pane);
   authModal.classList.add('open');
+  setTimeout(() => { const f = document.querySelector('#pane-' + pane + ' input'); if(f) f.focus(); }, 50);
 }
 function closeModal(){ authModal.classList.remove('open'); }
 function setActivePane(pane){
@@ -649,10 +1193,14 @@ function setActivePane(pane){
   panes.forEach(p => p.classList.toggle('active', p.id === 'pane-' + pane));
 }
 
+// Logged-in visitors go straight to the builder instead of seeing the signup form.
+let isLoggedIn = false;
+function primaryAction(){ window.location.href = 'simulator.html'; }
+
 navSignupBtn.addEventListener('click', () => openModal('signup'));
 navLoginBtn.addEventListener('click', () => openModal('login'));
 document.querySelectorAll('.open-signup-trigger').forEach(el=>{
-  el.addEventListener('click', () => openModal('signup'));
+  el.addEventListener('click', primaryAction);
 });
 document.getElementById('modalClose').addEventListener('click', closeModal);
 authModal.addEventListener('click', (e) => { if (e.target === authModal) closeModal(); });
@@ -701,6 +1249,7 @@ async function refreshManageSubVisibility(){
 }
 
 function showLoggedIn(name){
+  isLoggedIn = true;
   navAccount.style.display = 'inline-block';
   navLoginBtn.style.display = 'none';
   navSignupBtn.style.display = 'none';
@@ -709,19 +1258,22 @@ function showLoggedIn(name){
   refreshManageSubVisibility();
 }
 function showLoggedOut(){
+  isLoggedIn = false;
   navAccount.style.display = 'none';
   navAccountDropdown.classList.remove('open');
-  navLoginBtn.style.display = 'inline-block';
-  navSignupBtn.style.display = 'inline-block';
+  navLoginBtn.style.display = '';
+  navSignupBtn.style.display = '';
 }
 
 // Restore session on page load (e.g. coming back from the simulator)
-supabaseClient.auth.getSession().then(({ data }) => {
-  const user = data && data.session && data.session.user;
-  if(user){
-    showLoggedIn((user.user_metadata && user.user_metadata.name) || user.email.split('@')[0]);
-  }
-});
+if(supabaseClient){
+  supabaseClient.auth.getSession().then(({ data }) => {
+    const user = data && data.session && data.session.user;
+    if(user){
+      showLoggedIn((user.user_metadata && user.user_metadata.name) || user.email.split('@')[0]);
+    }
+  });
+}
 
 document.getElementById('signupForm').addEventListener('submit', async function(e){
   e.preventDefault();
@@ -735,12 +1287,12 @@ document.getElementById('signupForm').addEventListener('submit', async function(
     return;
   }
   const submitBtn = this.querySelector('.modal-submit');
-  submitBtn.disabled = true; submitBtn.textContent = 'Creating account...';
+  submitBtn.disabled = true; submitBtn.textContent = 'Creating account…';
   const refCode = new URLSearchParams(window.location.search).get('ref');
   const { data, error } = await supabaseClient.auth.signUp({
     email, password: pass, options: { data: { name, referred_by: refCode || null } }
   });
-  submitBtn.disabled = false; submitBtn.textContent = 'Create Account';
+  submitBtn.disabled = false; submitBtn.textContent = 'Create account';
   if(error){
     err.textContent = error.message;
     err.style.display = 'block';
@@ -752,7 +1304,7 @@ document.getElementById('signupForm').addEventListener('submit', async function(
   if(data.session){
     // No email confirmation required — trial starts immediately, straight into the builder.
     document.getElementById('successHeading').textContent = "You're in, " + name.split(' ')[0];
-    document.getElementById('successSub').textContent = "Your free trial has started. Taking you to the builder...";
+    document.getElementById('successSub').textContent = "Your free trial has started. Taking you to the builder…";
     showLoggedIn(name);
     setTimeout(() => { window.location.href = 'simulator.html'; }, 1200);
   } else {
@@ -773,9 +1325,9 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
     return;
   }
   const submitBtn = this.querySelector('.modal-submit');
-  submitBtn.disabled = true; submitBtn.textContent = 'Logging in...';
+  submitBtn.disabled = true; submitBtn.textContent = 'Logging in…';
   const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
-  submitBtn.disabled = false; submitBtn.textContent = 'Log In';
+  submitBtn.disabled = false; submitBtn.textContent = 'Log in';
   if(error){
     err.textContent = error.message;
     err.style.display = 'block';
@@ -785,7 +1337,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
   const name = (data.user.user_metadata && data.user.user_metadata.name) || email.split('@')[0];
   modalForms.style.display = 'none';
   document.getElementById('successHeading').textContent = "Welcome back";
-  document.getElementById('successSub').textContent = "Taking you to the builder...";
+  document.getElementById('successSub').textContent = "Taking you to the builder…";
   modalSuccess.style.display = 'block';
   showLoggedIn(name);
   setTimeout(() => { window.location.href = 'simulator.html'; }, 1000);
@@ -814,7 +1366,7 @@ document.getElementById('contactForm').addEventListener('submit', async function
   }
 
   btn.disabled = true;
-  btn.textContent = 'Sending...';
+  btn.textContent = 'Sending…';
   try{
     const resp = await fetch(this.action, {
       method: 'POST',
@@ -837,7 +1389,6 @@ document.getElementById('contactForm').addEventListener('submit', async function
   }
 });
 </script>
-
 
 </body>
 </html>

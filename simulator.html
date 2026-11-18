@@ -3,221 +3,441 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ClashArena — Battle Builder</title>
+<title>ClashBalls — Battle Builder</title>
+<meta name="theme-color" content="#07070B">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2307070B'/%3E%3Ccircle cx='12' cy='16' r='6' fill='%23FF4F8B'/%3E%3Ccircle cx='20' cy='16' r='6' fill='%233BE7FF' fill-opacity='.9'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 <style>
   :root{
-    --bg:#0E0F13;
-    --bg-raised:#171922;
-    --bg-raised-2:#1E212C;
-    --line:#2A2E3A;
-    --text:#F3F4F7;
-    --muted:#8B90A2;
-    --gold:#FFC94A;
+    --bg:#07070B;
+    --bg-1:#0D0D14;
+    --bg-2:#13131D;
+    --field:rgba(0,0,0,0.28);
+    --line:rgba(255,255,255,0.08);
+    --line-2:rgba(255,255,255,0.14);
+    --text:#F4F3F8;
+    --muted:#9A98AB;
+    --a:#FF4F8B;
+    --b:#3BE7FF;
+    --v:#8E6BFF;
+    --ok:#7CF2B0;
+    --gold:#FFC24D;
+    --danger:#FF5C7A;
+    --grad:linear-gradient(100deg,var(--a) 0%,var(--v) 50%,var(--b) 100%);
+    --serif:'Instrument Serif',Georgia,serif;
+    --sans:'Inter Tight','Inter',system-ui,sans-serif;
   }
   *{box-sizing:border-box;}
+  html{overflow-x:clip;}
   body{
     margin:0;background:var(--bg);color:var(--text);
-    font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;
+    font-family:var(--sans);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;
   }
-  h1,h2,.display{font-family:'Bebas Neue',sans-serif;letter-spacing:0.5px;font-weight:400;margin:0;}
-  a{color:inherit;}
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;
+    background:
+      radial-gradient(600px 420px at 90% -10%, rgba(142,107,255,0.18), transparent 70%),
+      radial-gradient(520px 380px at -10% 30%, rgba(255,79,139,0.10), transparent 70%),
+      radial-gradient(520px 420px at 100% 90%, rgba(59,231,255,0.07), transparent 70%);
+  }
+  h1,h2,h3{margin:0;font-weight:600;letter-spacing:-0.03em;line-height:1.05;}
+  p{margin:0;}
+  a{color:inherit;text-decoration:none;}
+  button,input,select{font-family:inherit;}
+  .serif{font-family:var(--serif);font-style:italic;font-weight:400;letter-spacing:-0.01em;}
+  .grad-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  :focus-visible{outline:2px solid var(--b);outline-offset:2px;}
 
+  /* ---------- NAV ---------- */
   nav{
-    border-bottom:1px solid var(--line);padding:14px 24px;
-    display:flex;align-items:center;justify-content:space-between;
+    position:sticky;top:0;z-index:50;
+    display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    padding:12px 24px;background:rgba(7,7,11,0.72);
+    backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);
+    border-bottom:1px solid var(--line);
   }
-  .logo{display:flex;align-items:center;gap:10px;font-family:'Bebas Neue',sans-serif;font-size:20px;}
-  .logo .dot-a{width:9px;height:9px;border-radius:50%;background:#FF3B5C;}
-  .logo .dot-b{width:9px;height:9px;border-radius:50%;background:#22D3EE;margin-left:-4px;}
-  .back-link{font-size:13.5px;color:var(--muted);}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;letter-spacing:-0.03em;}
+  .logo-mark{position:relative;width:26px;height:18px;flex:none;}
+  .logo-mark i{position:absolute;top:2px;width:14px;height:14px;border-radius:50%;}
+  .logo-mark i:first-child{left:0;background:var(--a);box-shadow:0 0 12px var(--a);}
+  .logo-mark i:last-child{right:0;background:var(--b);box-shadow:0 0 12px var(--b);mix-blend-mode:screen;}
+  .nav-left{display:flex;align-items:center;gap:22px;}
+  .back-link{font-size:13.5px;color:var(--muted);display:inline-flex;align-items:center;gap:6px;transition:color .2s;}
   .back-link:hover{color:var(--text);}
-
-  .layout{
-    max-width:1200px;margin:0 auto;padding:28px 20px 60px;
-    display:grid;grid-template-columns:400px 1fr;gap:26px;align-items:start;
+  .mode-tabs{display:flex;gap:4px;background:rgba(255,255,255,0.04);border:1px solid var(--line);border-radius:999px;padding:4px;}
+  .mode-tab{
+    padding:8px 18px;border-radius:999px;font-size:13.5px;font-weight:600;color:var(--muted);
+    cursor:pointer;background:none;border:none;transition:color .2s, background .2s;white-space:nowrap;
   }
-  @media(max-width:900px){.layout{grid-template-columns:1fr;}}
+  .mode-tab:hover{color:var(--text);}
+  .mode-tab.active{background:var(--text);color:var(--bg);}
+  .nav-right{display:flex;align-items:center;gap:10px;}
+  .trial-status{
+    font-size:12.5px;color:var(--muted);background:rgba(255,255,255,0.03);
+    border:1px solid var(--line-2);border-radius:999px;padding:6px 14px 6px 12px;
+    display:flex;align-items:center;gap:8px;white-space:nowrap;
+  }
+  .trial-status::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok);flex:none;}
+  .trial-status a{color:var(--gold);font-weight:700;}
+  .trial-status.limit-reached{color:var(--danger);border-color:rgba(255,92,122,0.35);}
+  .trial-status.limit-reached::before{background:var(--danger);box-shadow:0 0 8px var(--danger);}
+  .account-menu-wrap{position:relative;}
+  .account-btn{
+    background:rgba(255,255,255,0.04);color:var(--text);border:1px solid var(--line-2);
+    border-radius:999px;padding:7px 14px;font-size:13px;font-weight:500;cursor:pointer;transition:border-color .2s;
+  }
+  .account-btn:hover{border-color:rgba(255,255,255,0.3);}
+  .account-dropdown{
+    display:none;position:absolute;top:calc(100% + 10px);right:0;
+    background:var(--bg-2);border:1px solid var(--line-2);border-radius:14px;
+    min-width:210px;overflow:hidden;z-index:60;flex-direction:column;padding:6px;
+    box-shadow:0 20px 50px -20px rgba(0,0,0,0.8);
+  }
+  .account-dropdown.open{display:flex;}
+  .account-dropdown button{
+    background:none;border:none;color:var(--text);text-align:left;
+    padding:10px 12px;font-size:14px;cursor:pointer;border-radius:8px;
+  }
+  .account-dropdown button:hover{background:rgba(255,255,255,0.06);}
+  #upgradeBtn{color:var(--a);font-weight:600;}
+  @media(max-width:900px){
+    nav{padding:12px 16px;row-gap:12px;}
+    .mode-tabs{order:3;width:100%;justify-content:space-between;}
+    .mode-tab{flex:1;padding:8px 6px;}
+  }
+  @media(max-width:560px){
+    .back-link span{display:none;}
+    .trial-status{order:4;width:100%;justify-content:center;}
+  }
+
+  /* ---------- LAYOUT ---------- */
+  .layout{
+    max-width:1240px;margin:0 auto;padding:28px 24px 72px;
+    display:grid;grid-template-columns:420px 1fr;gap:24px;align-items:start;
+  }
+  @media(max-width:960px){.layout{grid-template-columns:1fr;padding:20px 16px 56px;}}
 
   /* ---------- CONTROLS ---------- */
   .panel{
-    background:var(--bg-raised);border:1px solid var(--line);
-    border-radius:14px;padding:20px;
+    background:linear-gradient(180deg,rgba(255,255,255,0.035),rgba(255,255,255,0.012));
+    border:1px solid var(--line);border-radius:22px;padding:24px;
   }
-  .panel h2{font-size:22px;margin-bottom:4px;}
-  .panel .sub{color:var(--muted);font-size:13px;margin-bottom:18px;}
-  .fighter-block{border-top:1px solid var(--line);padding-top:16px;margin-top:16px;}
-  .fighter-block:first-of-type{border-top:none;padding-top:0;margin-top:0;}
-  .fighter-title{
-    display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;margin-bottom:12px;
+  @media(max-width:560px){.panel{padding:18px;border-radius:18px;}}
+  .panel h2{font-size:30px;margin-bottom:6px;}
+  .panel h2 .serif{font-size:1.08em;}
+  .panel .sub{color:var(--muted);font-size:14px;margin-bottom:22px;}
+  .fighter-block{
+    border:1px solid var(--line);background:rgba(0,0,0,0.18);border-radius:16px;padding:18px;margin-top:14px;
   }
-  .swatch{width:12px;height:12px;border-radius:50%;}
-  .field{margin-bottom:12px;}
-  .field label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-bottom:5px;}
-  .field label span.val{color:var(--text);font-weight:600;}
+  .fighter-title{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px;margin-bottom:16px;letter-spacing:-0.01em;}
+  .fighter-title .tag{margin-left:auto;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+  .swatch{width:12px;height:12px;border-radius:50%;box-shadow:0 0 0 3px rgba(255,255,255,0.06), 0 0 12px currentColor;}
+  .field{margin-bottom:14px;}
+  .field label{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--muted);margin-bottom:7px;font-weight:500;}
+  .field label span.val{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums;}
   .field input[type="text"],
   .field input[type="email"],
   .field input[type="password"],
   .field input[type="number"],
   .field select{
-    width:100%;padding:9px 10px;border-radius:7px;border:1px solid var(--line);
-    background:var(--bg);color:var(--text);font-size:13.5px;font-family:'Inter',sans-serif;
+    width:100%;padding:11px 12px;border-radius:11px;border:1px solid var(--line-2);
+    background:var(--field);color:var(--text);font-size:14px;transition:border-color .2s, box-shadow .2s;
   }
-  .field input:focus{outline:2px solid #22D3EE;outline-offset:1px;border-color:transparent;}
+  .field select{
+    appearance:none;-webkit-appearance:none;padding-right:36px;cursor:pointer;
+    background:var(--field) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%239A98AB' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E") right 12px center/14px no-repeat;
+  }
+  .field select option, .field select optgroup{background:#13131D;color:var(--text);}
+  .field input:focus,.field select:focus,
+  .fighter-row-head input[type="text"]:focus{outline:none;border-color:var(--v);box-shadow:0 0 0 4px rgba(142,107,255,0.18);}
 
-  /* ---------- AUTH GATE ---------- */
+  /* range sliders */
+  input[type="range"]{-webkit-appearance:none;appearance:none;width:100%;height:22px;background:transparent;cursor:pointer;margin:0;}
+  input[type="range"]::-webkit-slider-runnable-track{height:4px;border-radius:4px;background:linear-gradient(90deg,var(--a),var(--v));opacity:.9;}
+  input[type="range"]::-moz-range-track{height:4px;border-radius:4px;background:rgba(255,255,255,0.12);}
+  input[type="range"]::-moz-range-progress{height:4px;border-radius:4px;background:linear-gradient(90deg,var(--a),var(--v));}
+  input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;margin-top:-7px;box-shadow:0 0 0 4px rgba(142,107,255,0.25),0 2px 6px rgba(0,0,0,0.5);transition:box-shadow .2s;}
+  input[type="range"]::-moz-range-thumb{width:18px;height:18px;border:none;border-radius:50%;background:#fff;box-shadow:0 0 0 4px rgba(142,107,255,0.25),0 2px 6px rgba(0,0,0,0.5);}
+  input[type="range"]:hover::-webkit-slider-thumb{box-shadow:0 0 0 6px rgba(142,107,255,0.3),0 2px 6px rgba(0,0,0,0.5);}
+
+  /* colour pickers */
+  input[type="color"]{-webkit-appearance:none;appearance:none;border:none;cursor:pointer;background:none;padding:0;}
+  input[type="color"]::-webkit-color-swatch-wrapper{padding:0;}
+  input[type="color"]::-webkit-color-swatch{border:none;border-radius:inherit;}
+  input[type="color"]::-moz-color-swatch{border:none;border-radius:inherit;}
+  .field input[type="color"]{
+    width:100%;height:42px;border-radius:11px;border:1px solid var(--line-2);padding:4px;background:var(--field);
+  }
+  .field input[type="color"]::-webkit-color-swatch{border-radius:8px;}
+  .field input[type="color"]::-moz-color-swatch{border-radius:8px;}
+
+  /* file inputs */
+  .field input[type="file"]{width:100%;padding:4px 0;font-size:12.5px;color:var(--muted);}
+  .field input[type="file"]::file-selector-button{
+    background:rgba(255,255,255,0.05);color:var(--text);border:1px solid var(--line-2);
+    border-radius:999px;padding:7px 14px;font-size:12.5px;font-weight:600;margin-right:10px;cursor:pointer;
+    font-family:var(--sans);transition:border-color .2s;
+  }
+  .field input[type="file"]::file-selector-button:hover{border-color:rgba(255,255,255,0.3);}
+  .sound-status{font-size:12px;color:var(--muted);margin-top:6px;}
+  .sound-status.error{color:var(--danger);}
+  .sound-status .clear-sound{color:var(--b);cursor:pointer;text-decoration:underline;text-underline-offset:2px;margin-left:6px;background:none;border:none;font-size:12px;font-family:var(--sans);}
+  .mute-row{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);margin-top:4px;cursor:pointer;user-select:none;}
+  .mute-row input[type="checkbox"]{
+    -webkit-appearance:none;appearance:none;width:34px;height:20px;border-radius:999px;margin:0;cursor:pointer;flex:none;
+    background:rgba(255,255,255,0.1);border:1px solid var(--line-2);position:relative;transition:background .2s;
+  }
+  .mute-row input[type="checkbox"]::after{
+    content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .2s;
+  }
+  .mute-row input[type="checkbox"]:checked{background:var(--v);border-color:var(--v);}
+  .mute-row input[type="checkbox"]:checked::after{transform:translateX(14px);}
+
+  .per-hit{margin:2px 0 14px;padding:12px 14px 0;border:1px dashed var(--line-2);border-radius:12px;}
+  .per-hit-title{font-size:11.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+  .row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+  .row-3 input[type="number"]{
+    width:100%;padding:11px 6px;border-radius:11px;border:1px solid var(--line-2);
+    background:var(--field);color:var(--text);font-size:13.5px;text-align:center;font-variant-numeric:tabular-nums;
+    -moz-appearance:textfield;transition:border-color .2s, box-shadow .2s;
+  }
+  .row-3 input[type="number"]::-webkit-outer-spin-button,
+  .row-3 input[type="number"]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+
+  /* FFA / boss rows */
+  .fighter-row{border:1px solid var(--line);background:rgba(0,0,0,0.18);border-radius:16px;padding:14px;margin-bottom:12px;}
+  .fighter-row-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .fighter-row-head input[type="color"]{width:34px;height:34px;border-radius:50%;flex:none;box-shadow:0 0 0 2px rgba(255,255,255,0.12);}
+  .fighter-row-head input[type="text"]{
+    flex:1;min-width:0;padding:9px 12px;border-radius:10px;border:1px solid var(--line-2);background:var(--field);
+    color:var(--text);font-size:14px;font-weight:600;letter-spacing:.02em;transition:border-color .2s, box-shadow .2s;
+  }
+  .fighter-row-head button{
+    width:30px;height:30px;flex:none;border-radius:50%;background:rgba(255,255,255,0.04);border:1px solid var(--line);
+    color:var(--muted);cursor:pointer;font-size:16px;line-height:1;transition:color .2s,border-color .2s;
+  }
+  .fighter-row-head button:hover{color:var(--danger);border-color:rgba(255,92,122,0.4);}
+  .row-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .row-fields .field{margin-bottom:0;}
+  .row-fields .field label{display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:6px;}
+  .row-fields .field input[type="number"],.row-fields .field select{padding:9px 10px;font-size:13px;border-radius:10px;}
+  .row-fields .field select{padding-right:32px;}
+  .field-full{grid-column:1 / -1;}
+  .add-btn{
+    width:100%;padding:12px 0;border-radius:14px;border:1px dashed var(--line-2);
+    background:none;color:var(--muted);font-size:13.5px;font-weight:500;cursor:pointer;margin-top:2px;transition:color .2s,border-color .2s;
+  }
+  .add-btn:hover{border-color:var(--v);color:var(--text);}
+  .swarm-count{display:flex;align-items:center;gap:14px;margin:6px 0 4px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,0.18);}
+  .swarm-count label{font-size:13px;color:var(--muted);white-space:nowrap;}
+  .swarm-count label span{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums;}
+
+  /* ---------- BUTTONS ---------- */
+  .panel-actions{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap;}
+  .btn{
+    flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    height:48px;padding:0 20px;border-radius:999px;font-weight:600;font-size:14.5px;
+    border:none;cursor:pointer;text-align:center;transition:transform .2s, box-shadow .25s, background .2s, border-color .2s;
+  }
+  .btn:active{transform:scale(.98);}
+  .btn-primary{
+    color:#fff;background:var(--grad);background-size:160% 100%;
+    box-shadow:0 0 0 1px rgba(255,255,255,0.12) inset, 0 10px 34px -12px rgba(255,79,139,0.7);
+  }
+  .btn-primary:hover{background-position:100% 0;}
+  .btn-ghost{background:rgba(255,255,255,0.04);color:var(--text);border:1px solid var(--line-2);}
+  .btn-ghost:hover{border-color:rgba(255,255,255,0.3);background:rgba(255,255,255,0.07);}
+  .btn-record{
+    width:100%;height:56px;border-radius:999px;font-size:15.5px;font-weight:600;cursor:pointer;
+    color:var(--text);border:1px solid transparent;
+    background:linear-gradient(var(--bg-2),var(--bg-2)) padding-box, var(--grad) border-box;
+    box-shadow:0 14px 40px -18px rgba(142,107,255,0.8);transition:transform .2s, box-shadow .25s;
+  }
+  .btn-record:hover{box-shadow:0 18px 50px -16px rgba(142,107,255,0.95);}
+  .btn-record:active{transform:scale(.99);}
+  .btn-record.recording{background:rgba(255,92,122,0.12);border-color:var(--danger);color:var(--danger);animation:recpulse 1.4s ease-in-out infinite;}
+  @keyframes recpulse{50%{box-shadow:0 0 0 8px rgba(255,92,122,0.12);}}
+  .btn:disabled,.btn-record:disabled{opacity:0.5;cursor:not-allowed;animation:none;}
+
+  /* ---------- STAGE (canvas side) ---------- */
+  .canvas-panel{
+    position:sticky;top:84px;
+    border:1px solid var(--line);border-radius:22px;padding:24px;
+    background:radial-gradient(500px 360px at 50% 0%, rgba(142,107,255,0.14), transparent 70%), linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01));
+    display:flex;flex-direction:column;align-items:center;gap:16px;
+  }
+  @media(max-width:960px){.canvas-panel{position:static;order:-1;padding:16px;border-radius:18px;}}
+  .stage-head{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .stage-head .label{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+  .stage-head .label::before{content:"";width:22px;height:1px;background:var(--grad);}
+  .bg-picker{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    padding:10px 12px 10px 16px;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,0.2);}
+  .bg-label{font-size:13px;color:var(--muted);}
+  .bg-label b{color:var(--text);font-weight:600;margin-left:4px;}
+  .bg-swatches{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .bg-swatch,.bg-custom{
+    width:30px;height:30px;border-radius:50%;cursor:pointer;border:none;padding:0;position:relative;flex:none;
+    box-shadow:0 0 0 1px rgba(255,255,255,0.18);transition:transform .15s, box-shadow .15s;
+  }
+  .bg-swatch:hover,.bg-custom:hover{transform:scale(1.08);}
+  .bg-swatch.active,.bg-custom.active{box-shadow:0 0 0 2px var(--bg), 0 0 0 4px var(--v);}
+  .bg-custom{display:inline-block;overflow:hidden;
+    background:conic-gradient(from 0deg,#ff4f8b,#ffc24d,#7cf2b0,#3be7ff,#8e6bff,#ff4f8b);}
+  .bg-custom input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;}
+  .bg-custom::after{content:"+";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    color:#fff;font-weight:700;font-size:16px;text-shadow:0 1px 3px rgba(0,0,0,0.6);pointer-events:none;}
+  .bg-custom.active::after{content:"";}
+  .stage-head .format{font-size:12px;color:var(--muted);border:1px solid var(--line-2);border-radius:999px;padding:4px 10px;}
+  #canvas-wrap{
+    position:relative;display:flex;justify-content:center;max-width:100%;
+    border-radius:16px;overflow:hidden;background:#e9ddc4;
+    box-shadow:0 0 0 1px rgba(255,255,255,0.08), 0 30px 70px -30px rgba(0,0,0,0.9), 0 0 60px -20px rgba(142,107,255,0.35);
+  }
+  canvas{display:block;max-width:100%;height:auto;}
+  #start-overlay{
+    position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+    background:rgba(7,7,11,0.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+    color:#fff;font-size:15px;font-weight:600;letter-spacing:.02em;cursor:pointer;text-align:center;user-select:none;
+  }
+  #start-overlay::before{
+    content:"";width:68px;height:68px;border-radius:50%;
+    background:var(--grad) ;box-shadow:0 0 40px -4px rgba(142,107,255,0.9);
+  }
+  #start-overlay::after{
+    content:"";position:absolute;top:50%;left:50%;width:0;height:0;
+    border-left:20px solid #fff;border-top:13px solid transparent;border-bottom:13px solid transparent;
+    transform:translate(-35%,calc(-50% - 17px));
+  }
+  #start-overlay:hover::before{transform:scale(1.06);transition:transform .2s;}
+  #hud{display:none !important;}
+  .hud{width:100%;max-width:460px;display:flex;flex-direction:column;gap:8px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,0.2);}
+  .hud-row{display:flex;align-items:center;gap:10px;font-size:12px;}
+  .hud-name{width:86px;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.02em;}
+  .hud-track{flex:1;height:8px;border-radius:5px;background:rgba(255,255,255,0.08);overflow:hidden;}
+  .hud-fill{height:100%;border-radius:5px;transition:width .15s;}
+  .hud-row.dead .hud-name,.hud-row.dead .hud-track{opacity:0.3;}
+  .status-line{color:var(--text);font-size:14px;text-align:center;font-weight:500;}
+  .stage-actions{width:100%;max-width:460px;display:flex;flex-direction:column;align-items:center;gap:10px;}
+  .rec-note{color:var(--muted);font-size:12.5px;text-align:center;max-width:46ch;}
+
+  /* ---------- AUTH / UPGRADE MODALS ---------- */
   .gate-overlay{
-    position:fixed;inset:0;z-index:200;background:var(--bg);
-    display:flex;align-items:center;justify-content:center;padding:20px;
+    position:fixed;inset:0;z-index:200;background:rgba(4,4,8,0.72);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    display:none;align-items:center;justify-content:center;padding:16px;overflow:auto;
   }
+  .gate-overlay.open{display:flex;animation:fadeIn .2s ease;}
+  @keyframes fadeIn{from{opacity:0;}}
+  .modal-x{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.05);
+    border:1px solid var(--line);color:var(--muted);font-size:18px;line-height:1;cursor:pointer;}
+  .modal-x:hover{color:var(--text);}
+  .up-card{max-width:440px;text-align:center;}
+  .pro-badge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.1em;padding:2px 7px;border-radius:999px;
+    background:var(--grad);color:#fff;vertical-align:middle;margin-left:6px;}
+  .pro-badge.big{font-size:12px;padding:4px 12px;margin:0 0 14px;}
+  .plan-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:4px 0 20px;}
+  .plan-opt{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;cursor:pointer;
+    padding:16px;border-radius:16px;border:1px solid var(--line-2);background:rgba(255,255,255,0.03);color:var(--text);transition:border-color .2s, background .2s;}
+  .plan-opt:hover{border-color:rgba(255,255,255,0.3);}
+  .plan-opt.active{border-color:transparent;background:linear-gradient(var(--bg-2),var(--bg-2)) padding-box, var(--grad) border-box;}
+  .plan-name{font-size:13px;color:var(--muted);font-weight:600;}
+  .plan-price{font-size:26px;font-weight:600;letter-spacing:-0.03em;}
+  .plan-price small{font-size:12.5px;color:var(--muted);font-weight:500;margin-left:3px;letter-spacing:0;}
+  .plan-note{font-size:12px;color:var(--muted);}
+  .plan-save{position:absolute;top:-10px;right:12px;font-size:10.5px;font-weight:700;letter-spacing:.06em;padding:3px 8px;border-radius:999px;background:var(--ok);color:var(--bg);}
+  .up-list{list-style:none;padding:0;margin:0 0 22px;display:flex;flex-direction:column;gap:9px;text-align:left;font-size:14px;}
+  .up-list li{display:flex;gap:10px;align-items:center;}
+  .up-list li::before{content:"✓";color:var(--ok);font-weight:700;}
+  .up-later{display:block;width:100%;margin-top:10px;background:none;border:none;color:var(--muted);font-size:13.5px;cursor:pointer;padding:8px;}
+  .up-later:hover{color:var(--text);}
+
+  /* nav buttons for visitors */
+  .nav-ghost{background:none;border:none;color:var(--muted);font-size:13.5px;font-weight:500;cursor:pointer;padding:8px 10px;}
+  .nav-ghost:hover{color:var(--text);}
+  .nav-cta{background:var(--text);color:var(--bg);border:none;border-radius:999px;height:36px;padding:0 16px;font-size:13.5px;font-weight:600;cursor:pointer;}
+  .nav-ref{background:rgba(255,79,139,0.1);border:1px solid rgba(255,79,139,0.35);color:var(--text);border-radius:999px;height:34px;padding:0 14px;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;}
+  .nav-ref:hover{background:rgba(255,79,139,0.18);}
+  @media(max-width:700px){.nav-ref{display:none !important;}}
+
+  /* scarcity meter */
+  .clip-meter{display:flex;align-items:center;justify-content:center;gap:10px;font-size:13px;color:var(--muted);min-height:22px;}
+  .clip-meter b{color:var(--text);font-weight:600;}
+  .clip-meter .dots{display:inline-flex;gap:5px;}
+  .clip-meter .dots i{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--line-2);}
+  .clip-meter .dots i.left{background:var(--grad);border-color:transparent;box-shadow:0 0 8px rgba(255,79,139,0.6);}
+  .clip-meter.last b{color:var(--gold);}
+  .clip-meter.empty b{color:var(--danger);}
+  .clip-meter a{color:var(--a);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px;}
+
+  /* watermark row */
+  .wm-row{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:10px 14px;border-radius:12px;
+    border:1px solid var(--line);background:rgba(0,0,0,0.2);color:var(--muted);font-size:13px;cursor:pointer;font-family:var(--sans);}
+  .wm-row b{color:var(--text);font-weight:600;}
+  .wm-row:hover{border-color:var(--line-2);}
+  .wm-row.pro{cursor:default;}
+
+  /* referral card */
+  .ref-card{display:flex;align-items:center;gap:12px;width:100%;padding:14px;border-radius:14px;text-align:left;
+    border:1px solid rgba(255,79,139,0.3);background:linear-gradient(135deg,rgba(255,79,139,0.08),rgba(142,107,255,0.06));transition:box-shadow .4s;}
+  .ref-card.flash{box-shadow:0 0 0 3px rgba(255,79,139,0.35);}
+  .ref-icon{font-size:22px;flex:none;}
+  .ref-text{font-size:12.5px;color:var(--muted);line-height:1.45;}
+  .ref-text strong{color:var(--text);display:block;font-size:13.5px;}
+  .ref-btn{flex:none;background:var(--text);color:var(--bg);border:none;border-radius:999px;height:34px;padding:0 14px;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;}
+  @media(max-width:420px){.ref-card{flex-wrap:wrap;}.ref-btn{width:100%;}}
+
+  /* locked Pro controls */
+  .pro-locked{position:relative;cursor:pointer;}
+  .pro-locked input{pointer-events:none;opacity:.45;}
+  .pro-locked::after{content:"🔒";position:absolute;top:0;right:0;font-size:11px;}
+  .per-hit.pro-locked::after{top:10px;right:12px;}
+  .per-hit.pro-locked .field::after{content:none;}
+  .bg-custom.pro-locked::after{content:"🔒";inset:0;font-size:12px;display:flex;align-items:center;justify-content:center;}
   .gate-card{
-    width:100%;max-width:380px;background:var(--bg-raised);border:1px solid var(--line);
-    border-radius:16px;padding:32px;
+    position:relative;width:100%;max-width:400px;background:var(--bg-1);border:1px solid var(--line-2);
+    border-radius:24px;padding:32px;box-shadow:0 40px 100px -30px rgba(0,0,0,0.9), 0 0 80px -30px rgba(142,107,255,0.5);
   }
-  .gate-sub{color:var(--muted);font-size:13.5px;text-align:center;margin:0 0 22px;}
-  .modal-tabs{display:flex;gap:4px;background:var(--bg-raised-2);border-radius:8px;padding:4px;margin-bottom:20px;}
-  .modal-tab{
-    flex:1;text-align:center;padding:9px 0;border-radius:6px;font-size:14px;font-weight:600;
-    color:var(--muted);cursor:pointer;background:none;border:none;font-family:'Inter',sans-serif;
-  }
-  .modal-tab.active{background:var(--bg-raised);color:var(--text);}
+  @media(max-width:420px){.gate-card{padding:24px;}}
+  .gate-card .logo{justify-content:center;margin-bottom:18px;}
+  .gate-title{font-size:30px;text-align:center;margin-bottom:8px;}
+  .gate-sub{color:var(--muted);font-size:14px;text-align:center;margin:0 0 24px;}
+  .modal-tabs{display:flex;gap:4px;background:rgba(255,255,255,0.04);border:1px solid var(--line);border-radius:999px;padding:4px;margin-bottom:22px;}
+  .modal-tab{flex:1;text-align:center;padding:8px 0;border-radius:999px;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;background:none;border:none;}
+  .modal-tab.active{background:var(--text);color:var(--bg);}
   .form-pane{display:none;}
   .form-pane.active{display:block;}
   .modal-submit{
-    width:100%;background:linear-gradient(90deg,#FF3B5C,#ff6b7f);color:#fff;
-    border:none;padding:12px 0;border-radius:8px;font-weight:700;font-size:15px;
-    cursor:pointer;margin-top:6px;font-family:'Inter',sans-serif;
+    width:100%;height:50px;margin-top:6px;border:none;border-radius:999px;cursor:pointer;
+    color:#fff;font-weight:600;font-size:15px;background:var(--grad);
+    box-shadow:0 0 0 1px rgba(255,255,255,0.12) inset, 0 10px 34px -12px rgba(255,79,139,0.7);
   }
-  .modal-error{color:#FF3B5C;font-size:13px;margin-top:10px;display:none;}
-
-  .trial-status{
-    font-size:13px;color:var(--muted);background:var(--bg-raised-2);
-    border:1px solid var(--line);border-radius:20px;padding:6px 14px;
-    display:flex;align-items:center;gap:10px;
-  }
-  .trial-status a{color:var(--gold);font-weight:700;text-decoration:none;}
-  .trial-status.limit-reached{color:#FF3B5C;border-color:#4a1420;}
-  .mode-tabs{display:flex;gap:4px;background:var(--bg-raised-2);border-radius:8px;padding:4px;margin-left:16px;}
-  .mode-tab{padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;background:none;border:none;font-family:'Inter',sans-serif;}
-  .mode-tab.active{background:var(--bg-raised);color:var(--text);}
-  .nav-right{display:flex;align-items:center;gap:12px;}
-  .account-menu-wrap{position:relative;}
-  .account-btn{
-    background:var(--bg-raised-2);color:var(--text);border:1px solid var(--line);
-    border-radius:20px;padding:6px 14px;font-size:13px;font-family:'Inter',sans-serif;
-    cursor:pointer;
-  }
-  .account-dropdown{
-    display:none;position:absolute;top:calc(100% + 8px);right:0;
-    background:var(--bg-raised);border:1px solid var(--line);border-radius:10px;
-    min-width:180px;overflow:hidden;z-index:60;flex-direction:column;
-  }
-  .account-dropdown.open{display:flex;}
-  .account-dropdown button{
-    background:none;border:none;color:var(--text);text-align:left;
-    padding:11px 14px;font-size:13.5px;cursor:pointer;font-family:'Inter',sans-serif;
-  }
-  .account-dropdown button:hover{background:var(--bg-raised-2);}
-  .account-dropdown button + button{border-top:1px solid var(--line);}
-  .field input[type="range"]{width:100%;accent-color:var(--gold);}
-  .field input[type="file"]{
-    width:100%;padding:8px 0;font-size:12.5px;color:var(--muted);font-family:'Inter',sans-serif;
-  }
-  .field input[type="file"]::file-selector-button{
-    background:var(--bg-raised-2);color:var(--text);border:1px solid var(--line);
-    border-radius:6px;padding:7px 12px;font-size:12.5px;font-weight:600;margin-right:10px;
-    cursor:pointer;font-family:'Inter',sans-serif;
-  }
-  .sound-status{font-size:12px;color:var(--muted);margin-top:5px;}
-  .sound-status.error{color:#FF3B5C;}
-  .fighter-row{background:var(--bg-raised-2);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;}
-  .fighter-row-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
-  .fighter-row-head input[type="color"]{width:26px;height:26px;border-radius:6px;border:1px solid var(--line);background:none;padding:0;cursor:pointer;}
-  .fighter-row-head input[type="text"]{flex:1;padding:7px 9px;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:13px;font-family:'Inter',sans-serif;}
-  .fighter-row-head button{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:2px 6px;}
-  .fighter-row-head button:hover{color:#FF3B5C;}
-  .row-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-  .row-fields .field label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;}
-  .row-fields .field input[type="number"],.row-fields .field select{
-    width:100%;padding:7px 8px;border-radius:6px;border:1px solid var(--line);
-    background:var(--bg);color:var(--text);font-size:12.5px;font-family:'Inter',sans-serif;
-  }
-  .field-full{grid-column:1 / -1;}
-  .add-btn{
-    width:100%;padding:10px 0;border-radius:8px;border:1px dashed var(--line);
-    background:none;color:var(--muted);font-size:13px;cursor:pointer;margin-top:4px;font-family:'Inter',sans-serif;
-  }
-  .add-btn:hover{border-color:var(--muted);color:var(--text);}
-  .swarm-count{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
-  .swarm-count input[type="range"]{flex:1;accent-color:var(--gold);}
-  .hud{width:100%;display:flex;flex-direction:column;gap:6px;}
-  .hud-row{display:flex;align-items:center;gap:8px;font-size:12px;}
-  .hud-name{width:80px;color:#3a3428;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .hud-track{flex:1;height:8px;border-radius:5px;background:rgba(0,0,0,0.15);overflow:hidden;}
-  .hud-fill{height:100%;border-radius:5px;transition:width .15s;}
-  .hud-row.dead .hud-name,.hud-row.dead .hud-track{opacity:0.35;}
-  .sound-status .clear-sound{color:var(--gold);cursor:pointer;text-decoration:underline;margin-left:6px;background:none;border:none;font-size:12px;font-family:'Inter',sans-serif;}
-  .mute-row{
-    display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);
-    margin-top:10px;cursor:pointer;
-  }
-  .mute-row input[type="checkbox"]{accent-color:var(--gold);width:15px;height:15px;cursor:pointer;}
-  .field input[type="color"]{
-    width:100%;height:36px;border-radius:7px;border:1px solid var(--line);
-    background:var(--bg);padding:3px;cursor:pointer;
-  }
-  .row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-  .row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
-  .row-3 input[type="number"]{
-    width:100%;padding:9px 6px;border-radius:7px;border:1px solid var(--line);
-    background:var(--bg);color:var(--text);font-size:12.5px;text-align:center;font-family:'Inter',sans-serif;
-    -moz-appearance:textfield;
-  }
-  .row-3 input[type="number"]::-webkit-outer-spin-button,
-  .row-3 input[type="number"]::-webkit-inner-spin-button{
-    -webkit-appearance:none;margin:0;
-  }
-
-  .panel-actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
-  .btn{
-    flex:1;padding:11px 0;border-radius:8px;font-weight:700;font-size:14px;
-    border:none;cursor:pointer;font-family:'Inter',sans-serif;text-align:center;
-  }
-  .btn-primary{background:linear-gradient(90deg,#FF3B5C,#ff6b7f);color:#fff;}
-  .btn-ghost{background:var(--bg-raised-2);color:var(--text);border:1px solid var(--line);}
-  .btn-record{background:var(--bg-raised-2);color:var(--text);border:1px solid var(--line);width:100%;margin-top:10px;}
-  .btn-record.recording{background:#4a1420;border-color:#FF3B5C;color:#FF3B5C;}
-  .btn:disabled{opacity:0.5;cursor:not-allowed;}
-
-  /* ---------- CANVAS SIDE ---------- */
-  .canvas-panel{
-    background:#e9ddc4;border:1px solid var(--line);border-radius:14px;
-    padding:20px;display:flex;flex-direction:column;align-items:center;gap:14px;
-  }
-  #canvas-wrap{position:relative;width:100%;display:flex;justify-content:center;background:#e9ddc4;}
-  canvas{display:block;border-radius:8px;max-width:100%;height:auto;}
-  #start-overlay{
-    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-    background:rgba(8,9,12,0.6);color:#fff;font-size:16px;font-weight:700;
-    border-radius:8px;cursor:pointer;text-align:center;user-select:none;
-  }
-  .status-line{color:var(--muted);font-size:13.5px;text-align:center;}
-  .rec-note{color:var(--muted);font-size:12px;text-align:center;max-width:44ch;}
+  .modal-submit:disabled{opacity:.6;cursor:wait;}
+  .modal-error{color:var(--danger);font-size:13.5px;margin-top:12px;display:none;}
+  .gate-back{display:block;text-align:center;margin-top:18px;font-size:13px;color:var(--muted);}
+  .gate-back:hover{color:var(--text);}
 </style>
 </head>
 <body>
 
 <nav>
-  <div class="logo"><span class="dot-a"></span><span class="dot-b"></span>&nbsp;ClashArena</div>
+  <div class="nav-left">
+    <a href="index.html" class="logo" aria-label="ClashBalls home"><span class="logo-mark"><i></i><i></i></span>ClashBalls</a>
+    <a class="back-link" href="index.html">← <span>Back to site</span></a>
+  </div>
   <div class="mode-tabs" id="gameModeTabs">
     <button class="mode-tab active" data-mode="duel">Duel</button>
     <button class="mode-tab" data-mode="ffa">Free-for-all</button>
     <button class="mode-tab" data-mode="boss">Boss Fight</button>
   </div>
   <div class="nav-right">
+    <button class="nav-ghost" id="navLoginBtn">Log in</button>
+    <button class="nav-cta" id="navSignupBtn">Sign up free</button>
+    <button class="nav-ref" id="navRefBtn" style="display:none;" title="Invite friends, get 50% off">🎁 Get 50% off</button>
     <div class="trial-status" id="trialStatus" style="display:none;"></div>
     <div class="account-menu-wrap" id="accountMenuWrap" style="display:none;">
       <button class="account-btn" id="accountBtn">Account ▾</button>
@@ -229,18 +449,19 @@
       </div>
     </div>
   </div>
-  <a class="back-link" href="index.html">← Back to site</a>
 </nav>
 
-<!-- AUTH GATE: blocks the whole builder until the person signs up or logs in -->
-<div class="gate-overlay" id="gateOverlay">
+<!-- AUTH MODAL: the builder is open to everyone; an account is only needed to record or go Pro -->
+<div class="gate-overlay" id="gateOverlay" role="dialog" aria-modal="true">
   <div class="gate-card">
-    <div class="logo" style="justify-content:center;margin-bottom:6px;"><span class="dot-a"></span><span class="dot-b"></span>&nbsp;ClashArena</div>
-    <p class="gate-sub">Sign up to start building battles. Free trial: 3 days, up to 7 clips.</p>
+    <button class="modal-x" id="gateClose" aria-label="Close">×</button>
+    <div class="logo"><span class="logo-mark"><i></i><i></i></span>ClashBalls</div>
+    <h1 class="gate-title" id="gateTitle">Save your <span class="serif grad-text">clip.</span></h1>
+    <p class="gate-sub" id="gateSub">Create a free account to record. Your first 3 clips are free, no credit card needed.</p>
 
     <div class="modal-tabs">
-      <button class="modal-tab active" data-pane="gate-signup">Sign Up</button>
-      <button class="modal-tab" data-pane="gate-login">Log In</button>
+      <button class="modal-tab active" data-pane="gate-signup">Sign up</button>
+      <button class="modal-tab" data-pane="gate-login">Log in</button>
     </div>
 
     <div class="form-pane active" id="pane-gate-signup">
@@ -255,9 +476,9 @@
         </div>
         <div class="field">
           <label for="gsu-password">Password</label>
-          <input type="password" id="gsu-password" required minlength="8" autocomplete="new-password">
+          <input type="password" id="gsu-password" required minlength="8" autocomplete="new-password" placeholder="At least 8 characters">
         </div>
-        <button type="submit" class="modal-submit">Start Free Trial</button>
+        <button type="submit" class="modal-submit">Create free account</button>
         <p class="modal-error" id="gsu-error">Please fill in every field (password: 8+ characters).</p>
       </form>
     </div>
@@ -279,22 +500,56 @@
   </div>
 </div>
 
-<div class="layout" id="mainLayout" style="display:none;">
+<!-- UPGRADE MODAL -->
+<div class="gate-overlay" id="upgradeModal" role="dialog" aria-modal="true">
+  <div class="gate-card up-card">
+    <button class="modal-x" id="upClose" aria-label="Close">×</button>
+    <span class="pro-badge big">PRO</span>
+    <h1 class="gate-title" id="upTitle">Go <span class="serif grad-text">Pro.</span></h1>
+    <p class="gate-sub" id="upSub">Unlimited clips, no watermark and every Pro feature.</p>
+    <div class="plan-options" role="radiogroup" aria-label="Billing period">
+      <button class="plan-opt" data-interval="month" role="radio" aria-checked="false">
+        <span class="plan-name">Monthly</span>
+        <span class="plan-price">14 €<small>/ month</small></span>
+        <span class="plan-note">Cancel anytime</span>
+      </button>
+      <button class="plan-opt active" data-interval="year" role="radio" aria-checked="true">
+        <span class="plan-save">Save 41%</span>
+        <span class="plan-name">Yearly</span>
+        <span class="plan-price">99 €<small>/ year</small></span>
+        <span class="plan-note">≈ 8.25 € a month</span>
+      </button>
+    </div>
+    <ul class="up-list">
+      <li>Unlimited clips</li>
+      <li>No watermark</li>
+      <li>Any background colour</li>
+      <li>Speed &amp; size change with every hit</li>
+      <li>New modes as soon as they launch</li>
+    </ul>
+    <button class="modal-submit" id="upGo">Go Pro yearly</button>
+    <button class="up-later" id="upLater">Maybe later</button>
+  </div>
+</div>
+
+<div class="layout" id="mainLayout">
 
   <!-- CONTROLS: DUEL -->
   <div class="panel" id="panel-duel">
-    <h2>Battle Builder</h2>
-    <p class="sub">Set up both fighters, then start the battle.</p>
+    <h2>Battle <span class="serif grad-text">Builder</span></h2>
+    <p class="sub">Set up both fighters, then tap the arena to start.</p>
 
     <div class="fighter-block">
-      <div class="fighter-title"><span class="swatch" id="swatchA"></span>Fighter 1</div>
-      <div class="field">
-        <label for="nameA">Name</label>
-        <input type="text" id="nameA" maxlength="14" value="BLAZE">
-      </div>
-      <div class="field">
-        <label for="colorA">Color</label>
-        <input type="color" id="colorA" value="#ff3b5c">
+      <div class="fighter-title"><span class="swatch" id="swatchA"></span>Fighter 1<span class="tag">Top</span></div>
+      <div class="row-2">
+        <div class="field">
+          <label for="nameA">Name</label>
+          <input type="text" id="nameA" maxlength="14" value="BLAZE">
+        </div>
+        <div class="field">
+          <label for="colorA">Color</label>
+          <input type="color" id="colorA" value="#ff3b5c">
+        </div>
       </div>
       <div class="field">
         <label>HP per bar <span class="val" id="hpATotal">3,000 total</span></label>
@@ -312,6 +567,17 @@
         <div class="field">
           <label for="speedA">Speed <span class="val" id="speedAVal">1.0×</span></label>
           <input type="range" id="speedA" min="0.4" max="3" step="0.1" value="1">
+        </div>
+      </div>
+      <div class="field">
+        <label for="sizeA">Ball size <span class="val" id="sizeAVal">1.0×</span></label>
+        <input type="range" id="sizeA" min="0.5" max="2.5" step="0.1" value="1">
+      </div>
+      <div class="per-hit">
+        <div class="per-hit-title">Change with every hit <span class="pro-badge">PRO</span></div>
+        <div class="row-2">
+          <div class="field"><label>Speed <span class="val" id="speedHitAVal">Off</span></label><input type="range" id="speedHitA" data-fmt="pct" min="-25" max="25" step="1" value="0"></div>
+          <div class="field"><label>Size <span class="val" id="sizeHitAVal">Off</span></label><input type="range" id="sizeHitA" data-fmt="pct" min="-25" max="25" step="1" value="0"></div>
         </div>
       </div>
       <div class="field">
@@ -355,14 +621,16 @@
     </div>
 
     <div class="fighter-block">
-      <div class="fighter-title"><span class="swatch" id="swatchB"></span>Fighter 2</div>
-      <div class="field">
-        <label for="nameB">Name</label>
-        <input type="text" id="nameB" maxlength="14" value="FROST">
-      </div>
-      <div class="field">
-        <label for="colorB">Color</label>
-        <input type="color" id="colorB" value="#22d3ee">
+      <div class="fighter-title"><span class="swatch" id="swatchB"></span>Fighter 2<span class="tag">Bottom</span></div>
+      <div class="row-2">
+        <div class="field">
+          <label for="nameB">Name</label>
+          <input type="text" id="nameB" maxlength="14" value="FROST">
+        </div>
+        <div class="field">
+          <label for="colorB">Color</label>
+          <input type="color" id="colorB" value="#22d3ee">
+        </div>
       </div>
       <div class="field">
         <label>HP per bar <span class="val" id="hpBTotal">3,000 total</span></label>
@@ -380,6 +648,17 @@
         <div class="field">
           <label for="speedB">Speed <span class="val" id="speedBVal">1.0×</span></label>
           <input type="range" id="speedB" min="0.4" max="3" step="0.1" value="1">
+        </div>
+      </div>
+      <div class="field">
+        <label for="sizeB">Ball size <span class="val" id="sizeBVal">1.0×</span></label>
+        <input type="range" id="sizeB" min="0.5" max="2.5" step="0.1" value="1">
+      </div>
+      <div class="per-hit">
+        <div class="per-hit-title">Change with every hit <span class="pro-badge">PRO</span></div>
+        <div class="row-2">
+          <div class="field"><label>Speed <span class="val" id="speedHitBVal">Off</span></label><input type="range" id="speedHitB" data-fmt="pct" min="-25" max="25" step="1" value="0"></div>
+          <div class="field"><label>Size <span class="val" id="sizeHitBVal">Off</span></label><input type="range" id="sizeHitB" data-fmt="pct" min="-25" max="25" step="1" value="0"></div>
         </div>
       </div>
       <div class="field">
@@ -423,25 +702,25 @@
     </div>
 
     <div class="panel-actions">
-      <button class="btn btn-primary" id="restartBtn">Restart Battle</button>
+      <button class="btn btn-primary" id="restartBtn">Restart battle</button>
       <button class="btn btn-ghost" id="randomBtn">Randomize</button>
     </div>
   </div>
 
   <!-- CONTROLS: FREE-FOR-ALL -->
   <div class="panel" id="panel-ffa" style="display:none;">
-    <h2>Free-for-all</h2>
+    <h2>Free-for-<span class="serif grad-text">all</span></h2>
     <p class="sub">2 to 6 balls, one shared arena. Last one standing wins.</p>
     <div id="ffaList"></div>
     <button class="add-btn" id="ffaAddBtn">+ Add fighter</button>
     <div class="panel-actions">
-      <button class="btn btn-primary" id="ffaRestartBtn">Restart Battle</button>
+      <button class="btn btn-primary" id="ffaRestartBtn">Restart battle</button>
     </div>
   </div>
 
   <!-- CONTROLS: BOSS FIGHT -->
   <div class="panel" id="panel-boss" style="display:none;">
-    <h2>Boss Fight</h2>
+    <h2>Boss <span class="serif grad-text">Fight</span></h2>
     <p class="sub">One oversized boss against a swarm of small balls. Minions don't damage each other.</p>
 
     <div class="fighter-row">
@@ -452,6 +731,10 @@
       <div class="row-fields">
         <div class="field"><label>HP</label><input type="number" id="bossHp" value="12000" min="500"></div>
         <div class="field"><label>Damage</label><input type="number" id="bossDmg" value="60" min="1"></div>
+        <div class="field"><label>Speed <span class="val">0.7×</span></label><input type="range" id="bossSpeed" min="0.3" max="3" step="0.1" value="0.7"></div>
+        <div class="field"><label>Ball size <span class="val">1.0×</span></label><input type="range" id="bossSize" min="0.5" max="2" step="0.1" value="1"></div>
+        <div class="field"><label>Speed / hit <span class="val">Off</span></label><input type="range" id="bossSpeedHit" data-fmt="pct" min="-25" max="25" step="1" value="0"></div>
+        <div class="field"><label>Size / hit <span class="val">Off</span></label><input type="range" id="bossSizeHit" data-fmt="pct" min="-25" max="25" step="1" value="0"></div>
         <div class="field field-full"><label>Damage growth</label><select id="bossGrowth"></select></div>
       </div>
     </div>
@@ -464,30 +747,50 @@
       <div class="row-fields">
         <div class="field"><label>HP each</label><input type="number" id="swarmHp" value="400" min="50"></div>
         <div class="field"><label>Damage each</label><input type="number" id="swarmDmg" value="15" min="1"></div>
+        <div class="field"><label>Speed <span class="val">1.2×</span></label><input type="range" id="swarmSpeed" min="0.4" max="3" step="0.1" value="1.2"></div>
+        <div class="field"><label>Ball size <span class="val">1.0×</span></label><input type="range" id="swarmSize" min="0.5" max="3" step="0.1" value="1"></div>
+        <div class="field"><label>Speed / hit <span class="val">Off</span></label><input type="range" id="swarmSpeedHit" data-fmt="pct" min="-25" max="25" step="1" value="0"></div>
+        <div class="field"><label>Size / hit <span class="val">Off</span></label><input type="range" id="swarmSizeHit" data-fmt="pct" min="-25" max="25" step="1" value="0"></div>
         <div class="field field-full"><label>Damage growth</label><select id="swarmGrowth"></select></div>
       </div>
     </div>
 
     <div class="swarm-count">
-      <label style="font-size:12.5px;color:var(--muted);white-space:nowrap;">Swarm size <span id="swarmCountVal">4</span></label>
+      <label>Swarm size <span id="swarmCountVal">4</span></label>
       <input type="range" id="swarmCount" min="2" max="15" value="4">
     </div>
 
     <div class="panel-actions">
-      <button class="btn btn-primary" id="bossRestartBtn">Restart Battle</button>
+      <button class="btn btn-primary" id="bossRestartBtn">Restart battle</button>
     </div>
   </div>
 
   <!-- CANVAS -->
   <div class="canvas-panel">
+    <div class="stage-head"><span class="label">Arena</span><span class="format">Exports 1080×1920 · MP4</span></div>
+    <div class="bg-picker">
+      <span class="bg-label">Background <b id="bgName">Classic</b></span>
+      <div class="bg-swatches" id="bgSwatches">
+        <label class="bg-custom" id="bgCustomWrap" title="Any colour (Pro)" aria-label="Custom background colour (Pro)"><input type="color" id="bgCustom" value="#e9ddc4"></label>
+      </div>
+    </div>
     <div id="canvas-wrap">
       <canvas id="c"></canvas>
       <div id="start-overlay">Tap to start</div>
     </div>
     <div class="hud" id="hud" style="display:none;"></div>
-    <p class="status-line" id="statusLine">Configure your fighters, then tap the arena to begin.</p>
-    <button class="btn-record" id="recordBtn">● Record clip</button>
-    <p class="rec-note" id="recNote">Records the battle and downloads it as an MP4, ready for TikTok.</p>
+    <div class="stage-actions">
+      <p class="status-line" id="statusLine">Configure your fighters, then tap the arena to begin.</p>
+      <div class="clip-meter" id="clipMeter"></div>
+      <button class="btn-record" id="recordBtn">● Record clip</button>
+      <p class="rec-note" id="recNote">Records the battle and downloads it as an MP4, ready for TikTok.</p>
+      <button class="wm-row" id="wmRow" type="button"></button>
+      <div class="ref-card" id="refCard" style="display:none;">
+        <div class="ref-icon">🎁</div>
+        <div class="ref-text"><strong>Invite friends, get 50% off.</strong> When a friend signs up with your link and goes Pro, your next payment is 50% off.</div>
+        <button class="ref-btn" id="refCopyBtn" type="button">Copy invite link</button>
+      </div>
+    </div>
   </div>
 
 </div>
@@ -520,12 +823,18 @@ const BOT_CHECKER_Y0 = BOT_BAR_Y1, BOT_CHECKER_Y1 = BOT_CHECKER_Y0 + CHECKER_H;
 
 const H = BOT_CHECKER_Y1;
 const W_MULTI = 440, H_MULTI = 460; // logical arena size for Free-for-all / Boss Fight
+// Every mode renders into a 9:16 frame so exports are exactly 1080x1920.
+const DUEL_CANVAS_H = W * 16 / 9;                 // duel layout is centred vertically in it
+const DUEL_OFFSET_Y = (DUEL_CANVAS_H - H) / 2;
+const MULTI_CANVAS_H = W_MULTI * 16 / 9;          // health bars on top, arena below
+const MULTI_ARENA_Y = MULTI_CANVAS_H - H_MULTI - 26;
+const MULTI_HUD_Y0 = 24, MULTI_HUD_Y1 = MULTI_ARENA_Y - 18;
 const EXPORT_RENDER_SCALE = 1080 / W; // used only while actually recording a clip
 const DISPLAY_RENDER_SCALE = Math.min(2, window.devicePixelRatio || 1); // crisp but cheap during normal play
 let activeRenderScale = DISPLAY_RENDER_SCALE;
 
 function activeWH(){
-  return currentMode === 'duel' ? { w: W, h: H } : { w: W_MULTI, h: H_MULTI };
+  return currentMode === 'duel' ? { w: W, h: DUEL_CANVAS_H } : { w: W_MULTI, h: MULTI_CANVAS_H };
 }
 function setCanvasResolution(scale){
   activeRenderScale = scale;
@@ -537,8 +846,12 @@ setCanvasResolution(DISPLAY_RENDER_SCALE);
 
 function resizeCanvas(){
   const wrap = document.getElementById('canvas-wrap');
-  const availW = Math.min(wrap.clientWidth, 460);
   const { w, h } = activeWH();
+  // on desktop, keep the whole arena plus the record button inside the viewport
+  const fitH = window.innerWidth > 960 ? Math.max(340, window.innerHeight - 360) : Infinity;
+  const panel = wrap.parentElement, ps = getComputedStyle(panel);
+  const panelW = panel.clientWidth - parseFloat(ps.paddingLeft) - parseFloat(ps.paddingRight);
+  const availW = Math.min(panelW > 0 ? panelW : 460, 460, fitH * w / h);
   canvas.style.width = availW + 'px';
   canvas.style.height = (availW * h / w) + 'px';
 }
@@ -679,6 +992,9 @@ function readConfig(){
       dmg: parseInt(document.getElementById('dmgA').value, 10),
       growthKey: document.getElementById('growthA').value,
       speed: parseFloat(document.getElementById('speedA').value),
+      size: parseFloat(document.getElementById('sizeA').value) || 1,
+      speedHit: (parseFloat(document.getElementById('speedHitA').value) || 0) / 100,
+      sizeHit: (parseFloat(document.getElementById('sizeHitA').value) || 0) / 100,
     },
     B: {
       name: document.getElementById('nameB').value.trim().toUpperCase() || 'FIGHTER 2',
@@ -687,6 +1003,9 @@ function readConfig(){
       dmg: parseInt(document.getElementById('dmgB').value, 10),
       growthKey: document.getElementById('growthB').value,
       speed: parseFloat(document.getElementById('speedB').value),
+      size: parseFloat(document.getElementById('sizeB').value) || 1,
+      speedHit: (parseFloat(document.getElementById('speedHitB').value) || 0) / 100,
+      sizeHit: (parseFloat(document.getElementById('sizeHitB').value) || 0) / 100,
     }
   };
 }
@@ -715,6 +1034,10 @@ bindLiveLabel('dmgA','dmgAVal', v => Math.round(v).toLocaleString('en-US'));
 bindLiveLabel('dmgB','dmgBVal', v => Math.round(v).toLocaleString('en-US'));
 bindLiveLabel('speedA','speedAVal', v => v.toFixed(1) + '×');
 bindLiveLabel('speedB','speedBVal', v => v.toFixed(1) + '×');
+bindLiveLabel('sizeA','sizeAVal', v => v.toFixed(1) + '×');
+bindLiveLabel('sizeB','sizeBVal', v => v.toFixed(1) + '×');
+function fmtPerHit(v){ return v === 0 ? 'Off' : (v > 0 ? '+' : '−') + Math.abs(v) + '%'; }
+['speedHitA','sizeHitA','speedHitB','sizeHitB'].forEach(id => bindLiveLabel(id, id + 'Val', fmtPerHit));
 
 function syncSwatches(){
   document.getElementById('swatchA').style.background = document.getElementById('colorA').value;
@@ -734,7 +1057,8 @@ function makeFighter(conf, arenaY0, arenaY1orig){
     conf,
     x: W/2, y: arenaY0 + ARENA_H/2,
     vx: Math.cos(angle) * spd, vy: Math.sin(angle) * spd,
-    r: 15,
+    r: 15 * (conf.size || 1),
+    curSpeed: conf.speed,
     bars: conf.tierHp.slice(),
     hitCount: 0,
     arenaY0, arenaY1orig,
@@ -747,6 +1071,25 @@ function activeBarIndex(bars){
   return bars.length;
 }
 function isDepleted(bars){ return bars.every(h => h <= 0); }
+
+/* "Change with every hit": speed and size grow (or shrink) by a percentage on each hit. */
+const PER_HIT_SPEED_MIN = 0.2, PER_HIT_SPEED_MAX = 6;   // multiples of the base speed
+function applyPerHitDuel(f){
+  if(!isProUser()) return;
+  if(f.conf.speedHit){
+    const next = Math.min(PER_HIT_SPEED_MAX, Math.max(PER_HIT_SPEED_MIN, f.curSpeed * (1 + f.conf.speedHit)));
+    f.vx *= next / f.curSpeed;
+    f.curSpeed = next;
+  }
+  if(f.conf.sizeHit) f.r = Math.min(60, Math.max(5, f.r * (1 + f.conf.sizeHit)));
+}
+function applyPerHitMulti(f){
+  if(!isProUser()) return;
+  if(f.speedHit){
+    f.targetSpeed = Math.min(2.4 * PER_HIT_SPEED_MAX, Math.max(2.4 * PER_HIT_SPEED_MIN, f.targetSpeed * (1 + f.speedHit)));
+  }
+  if(f.sizeHit) f.r = Math.min(f.isBoss ? 140 : 110, Math.max(5, f.r * (1 + f.sizeHit)));
+}
 
 /* ============ Damage growth sequences ============ */
 /* All sequences are defined so that hit #1 always equals the base damage;
@@ -833,8 +1176,9 @@ function stepFighter(f, dt){
   if(f.y + f.r > y1){
     f.y = y1 - f.r;
     if(!barsGone){
-      f.vy = -BOUNCE_VY * Math.sqrt(f.conf.speed);
+      f.vy = -BOUNCE_VY * Math.sqrt(f.curSpeed);
       f.hitCount++;
+      applyPerHitDuel(f);
       const dmg = nextDamage(f);
       const bars = f.bars;
       for(let i=0;i<bars.length;i++){ if(bars[i] > 0){ bars[i] = Math.max(0, bars[i]-dmg); break; } }
@@ -867,6 +1211,63 @@ function updateDuel(dt){
   for(let i=popups.length-1;i>=0;i--){ popups[i].age++; if(popups[i].age > 36) popups.splice(i,1); }
 }
 
+/* ============ Arena background colour ============ */
+// Same presets as the landing page previews. "Classic" is the original beige.
+const ARENA_THEMES = [
+  { key:'classic',  name:'Classic',  outer:'#e9ddc4', arena:'#fdfaf2', ink:'#111111' },
+  { key:'mint',     name:'Mint',     outer:'#c9ecd9', arena:'#f2fbf6', ink:'#0f2a1d' },
+  { key:'lavender', name:'Lavender', outer:'#dcd5f5', arena:'#f7f5fe', ink:'#1d1640' },
+  { key:'midnight', name:'Midnight', outer:'#14151d', arena:'#222536', ink:'#f3f3f7' },
+  { key:'sky',      name:'Sky',      outer:'#cde3f6', arena:'#f3f9fe', ink:'#0d2338' },
+  { key:'peach',    name:'Peach',    outer:'#f7d8c6', arena:'#fff6f0', ink:'#3a1a0c' },
+];
+let arenaTheme = ARENA_THEMES[0];
+let savedCustomBg = null; // applied once we know the user is Pro
+
+function hexToRgb(hex){ const n = parseInt(hex.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+function rgbToHex(r,g,b){ return '#' + [r,g,b].map(v => Math.round(v).toString(16).padStart(2,'0')).join(''); }
+function mixHex(a, b, t){ const x = hexToRgb(a), y = hexToRgb(b); return rgbToHex(x[0]+(y[0]-x[0])*t, x[1]+(y[1]-x[1])*t, x[2]+(y[2]-x[2])*t); }
+function luminance(hex){ const [r,g,b] = hexToRgb(hex).map(v => { v /= 255; return v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4); }); return 0.2126*r + 0.7152*g + 0.0722*b; }
+// Builds a full theme from one picked colour: the picked colour frames the arena,
+// the arena floor is a softer tint of it, and text flips to light on dark colours.
+function themeFromColor(hex){
+  const dark = luminance(hex) < 0.18;
+  return { key:'custom', name:'Custom', outer:hex,
+    arena: dark ? mixHex(hex, '#ffffff', 0.08) : mixHex(hex, '#ffffff', 0.8),
+    ink: dark ? '#f3f3f7' : '#111111' };
+}
+
+function setArenaTheme(theme){
+  arenaTheme = theme;
+  const wrap = document.getElementById('canvas-wrap');
+  if(wrap) wrap.style.background = theme.outer;
+  document.querySelectorAll('#bgSwatches .bg-swatch').forEach(b => b.classList.toggle('active', b.dataset.key === theme.key));
+  const custom = document.getElementById('bgCustomWrap');
+  if(custom){ custom.classList.toggle('active', theme.key === 'custom'); if(theme.key === 'custom') custom.style.background = theme.outer; }
+  const name = document.getElementById('bgName');
+  if(name) name.textContent = theme.name;
+  try{ localStorage.setItem('clashballs-bg', theme.key === 'custom' ? theme.outer : theme.key); }catch(e){}
+}
+
+(function initBgPicker(){
+  const box = document.getElementById('bgSwatches');
+  if(!box) return;
+  ARENA_THEMES.forEach(t => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'bg-swatch'; b.dataset.key = t.key;
+    b.title = t.name; b.setAttribute('aria-label', t.name + ' background');
+    b.style.background = 'linear-gradient(135deg,' + t.outer + ' 50%,' + t.arena + ' 50%)';
+    b.addEventListener('click', () => setArenaTheme(t));
+    box.insertBefore(b, document.getElementById('bgCustomWrap'));
+  });
+  const picker = document.getElementById('bgCustom');
+  picker.addEventListener('input', () => { if(isProUser()) setArenaTheme(themeFromColor(picker.value)); });
+  let saved = null;
+  try{ saved = localStorage.getItem('clashballs-bg'); }catch(e){}
+  if(saved && saved[0] === '#'){ picker.value = saved; savedCustomBg = saved; setArenaTheme(ARENA_THEMES[0]); }
+  else setArenaTheme(ARENA_THEMES.find(t => t.key === saved) || ARENA_THEMES[0]);
+})();
+
 /* ============ Drawing ============ */
 function drawWatermark(w, y){
   if(trialInfo.plan === 'pro') return;
@@ -881,7 +1282,7 @@ function drawWatermark(w, y){
 }
 
 function drawArenaBg(y0,y1){
-  ctx.fillStyle = '#fdfaf2';
+  ctx.fillStyle = arenaTheme.arena;
   ctx.fillRect(0,y0,W,y1-y0);
   ctx.strokeStyle = '#000'; ctx.lineWidth = 2;
   ctx.strokeRect(1,y0+1,W-2,(y1-y0)-2);
@@ -901,7 +1302,7 @@ function drawBall(f){
   ctx.fill();
   ctx.lineWidth = 2; ctx.strokeStyle = '#000'; ctx.stroke();
   ctx.fillStyle = '#fff';
-  ctx.font = '900 12px Arial';
+  ctx.font = '900 ' + Math.max(10, Math.round(f.r * 0.8)) + 'px Arial';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(f.conf.name.charAt(0), f.x, f.y+1);
 }
@@ -941,8 +1342,8 @@ function drawPopups(f){
 
 function drawDuel(){
   ctx.setTransform(activeRenderScale, 0, 0, activeRenderScale, 0, 0);
-  ctx.clearRect(0,0,W,H);
-  ctx.fillStyle = '#e9ddc4'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = arenaTheme.outer; ctx.fillRect(0,0,W,DUEL_CANVAS_H);
+  ctx.translate(0, DUEL_OFFSET_Y);
 
   drawLabel(TOP_LABEL_Y0, TOP_LABEL_Y1, top_);
   const topFloor = currentFloor(top_);
@@ -953,7 +1354,7 @@ function drawDuel(){
   drawBars(top_);
   drawChecker(TOP_CHECKER_Y0, TOP_CHECKER_Y1);
 
-  ctx.fillStyle = '#111'; ctx.font = '900 18px Arial';
+  ctx.fillStyle = arenaTheme.ink; ctx.font = '900 18px Arial';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText('VS', W/2, (VS_Y0+VS_Y1)/2);
 
@@ -1019,7 +1420,7 @@ document.getElementById('randomBtn').addEventListener('click', () => {
 });
 
 /* Restart automatically whenever a config field changes, before the battle starts */
-['nameA','nameB','colorA','colorB','hpA1','hpA2','hpA3','hpB1','hpB2','hpB3','dmgA','dmgB','growthA','growthB','speedA','speedB'].forEach(id => {
+['nameA','nameB','colorA','colorB','hpA1','hpA2','hpA3','hpB1','hpB2','hpB3','dmgA','dmgB','growthA','growthB','speedA','speedB','sizeA','sizeB','speedHitA','speedHitB','sizeHitA','sizeHitB'].forEach(id => {
   document.getElementById(id).addEventListener('change', () => { if(!started) resetGame(); });
 });
 
@@ -1077,12 +1478,13 @@ const M_GRAVITY = 0, M_WALL_BOUNCE = 0.98, M_KICK = 6.5;
 let mFighters = [], mPopups = [], mStarted=false, mGameOver=false, mWinner=null;
 
 function makeFighterMulti(conf){
-  const r = conf.isBoss ? 42 : 16;
+  const r = (conf.isBoss ? 42 : 16) * (conf.size || 1);
   const angle = Math.random()*Math.PI*2;
   const spd = 2.4*conf.speed;
   return {
     name: conf.name, color: conf.color, maxHp: conf.hp, hp: conf.hp,
-    dmg: conf.dmg, growthKey: conf.growthKey, speed: conf.speed, r,
+    dmg: conf.dmg, growthKey: conf.growthKey, speed: conf.speed, r, targetSpeed: 2.4*conf.speed,
+    speedHit: conf.speedHit || 0, sizeHit: conf.sizeHit || 0,
     isBoss: !!conf.isBoss,
     x: 0, y: 0,
     vx: Math.cos(angle)*spd, vy: Math.sin(angle)*spd,
@@ -1114,7 +1516,28 @@ function stepFighterMulti(f, dt){
   if(f.x>x1){ f.x=x1; f.vx=-Math.abs(f.vx)*M_WALL_BOUNCE; }
   if(f.y<y0){ f.y=y0; f.vy=Math.abs(f.vy)*M_WALL_BOUNCE; }
   if(f.y>y1){ f.y=y1; f.vy=-Math.abs(f.vy)*M_WALL_BOUNCE; }
+  // Collisions kick balls around; ease each one back to its configured speed
+  // so the Speed setting still matters after the first hits.
+  const s = Math.hypot(f.vx, f.vy);
+  if(s > 0.01 && f.targetSpeed){
+    const k = Math.pow(f.targetSpeed / s, Math.min(1, 0.04 * dt));
+    f.vx *= k; f.vy *= k;
+  }
 }
+
+/* Value labels for the speed / size sliders in the Free-for-all and Boss panels,
+   and restart the preview when a setting changes before the fight starts. */
+document.addEventListener('input', e => {
+  const el = e.target;
+  if(el.type !== 'range' || !el.closest('.row-fields')) return;
+  const val = el.parentElement.querySelector('.val');
+  if(val) val.textContent = el.dataset.fmt === 'pct' ? fmtPerHit(parseFloat(el.value)) : parseFloat(el.value).toFixed(1) + '×';
+});
+['panel-ffa','panel-boss'].forEach(id => {
+  document.getElementById(id).addEventListener('change', e => {
+    if(e.target.matches('input, select') && !mStarted) resetGame();
+  });
+});
 
 function resolveCollisionMulti(a, b){
   if(!a.alive || !b.alive) return;
@@ -1143,6 +1566,7 @@ function resolveCollisionMulti(a, b){
   if(a.contacts.has(b)) return;
   a.contacts.add(b); b.contacts.add(a);
   a.hitCount++; b.hitCount++;
+  applyPerHitMulti(a); applyPerHitMulti(b);
   const dmgA = nextDamageMulti(a), dmgB = nextDamageMulti(b);
   b.hp = Math.max(0, b.hp-dmgA); a.hp = Math.max(0, a.hp-dmgB);
   addPopupMulti(b.x,b.y,'-'+dmgA.toLocaleString('en-US'),a.color);
@@ -1168,10 +1592,63 @@ function updateMulti(dt){
   updateHudMulti();
 }
 
+/* Health bars for Free-for-all / Boss Fight, drawn into the canvas so they end up in the video. */
+function outlinedText(text, x, y, size, align){
+  ctx.font = '900 ' + size + 'px Arial'; ctx.textAlign = align; ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(3, size * 0.28); ctx.strokeStyle = '#000';
+  ctx.strokeText(text, x, y); ctx.fillStyle = '#fff'; ctx.fillText(text, x, y);
+}
+function hudBar(f, x, y, w, h, label, size){
+  const darkBg = luminance(arenaTheme.outer) < 0.18;
+  ctx.globalAlpha = f.alive ? 1 : 0.35;
+  ctx.fillStyle = darkBg ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.13)';
+  ctx.fillRect(x, y, w, h);
+  const fw = w * Math.max(0, f.hp) / f.maxHp;
+  if(fw > 0){ ctx.fillStyle = f.color; ctx.fillRect(x, y, fw, h); }
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5; ctx.strokeRect(x + 0.75, y + 0.75, w - 1.5, h - 1.5);
+  const pad = Math.min(10, h * 0.35);
+  if(label) outlinedText(label, x + pad, y + h / 2 + 1, size, 'left');
+  outlinedText(Math.max(0, Math.round(f.hp)).toLocaleString('en-US'), x + w - pad, y + h / 2 + 1, size, label ? 'right' : 'center');
+  ctx.globalAlpha = 1;
+}
+function drawMultiHud(){
+  if(!mFighters || !mFighters.length) return;
+  const x = 12, w = W_MULTI - 24, top = MULTI_HUD_Y0, avail = MULTI_HUD_Y1 - MULTI_HUD_Y0;
+  const boss = mFighters.find(f => f.isBoss);
+  if(boss){
+    const minions = mFighters.filter(f => !f.isBoss);
+    const cols = Math.min(5, minions.length), rows = Math.ceil(minions.length / cols);
+    const cellGap = 8, cellH = 26, labelH = 22, bossH = 50;
+    const blockH = bossH + 18 + labelH + rows * cellH + (rows - 1) * cellGap;
+    let y = top + Math.max(0, (avail - blockH) / 2);
+    hudBar(boss, x, y, w, bossH, boss.name, 18);
+    y += bossH + 18;
+    ctx.fillStyle = arenaTheme.ink; ctx.font = '900 13px Arial'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText(minions.length + ' × ' + (minions[0] ? minions[0].name.replace(/\s+\d+$/, '') : ''), x, y + labelH / 2 - 3);
+    y += labelH;
+    const cellW = (w - (cols - 1) * cellGap) / cols;
+    minions.forEach((m, i) => {
+      const c = i % cols, r = Math.floor(i / cols);
+      hudBar(m, x + c * (cellW + cellGap), y + r * (cellH + cellGap), cellW, cellH, null, 12);
+    });
+    return;
+  }
+  const n = mFighters.length, gap = 10;
+  const rowH = Math.min(56, (avail - (n - 1) * gap) / n);
+  const blockH = n * rowH + (n - 1) * gap;
+  let y = top + Math.max(0, (avail - blockH) / 2);
+  const size = Math.round(Math.min(20, rowH * 0.42));
+  mFighters.forEach(f => { hudBar(f, x, y, w, rowH, f.name, size); y += rowH + gap; });
+}
+
 function drawMulti(){
   ctx.setTransform(activeRenderScale,0,0,activeRenderScale,0,0);
-  ctx.fillStyle='#fdfaf2'; ctx.fillRect(0,0,W_MULTI,H_MULTI);
-  ctx.strokeStyle='#000'; ctx.lineWidth=2; ctx.strokeRect(1,1,W_MULTI-2,H_MULTI-2);
+  ctx.fillStyle=arenaTheme.outer; ctx.fillRect(0,0,W_MULTI,MULTI_CANVAS_H);
+  drawMultiHud();
+  ctx.translate(0, MULTI_ARENA_Y);
+  // background colour frames the arena; balls bounce exactly at its inner edge (r + 6)
+  ctx.fillStyle=arenaTheme.arena; ctx.fillRect(6,6,W_MULTI-12,H_MULTI-12);
+  ctx.strokeStyle='#000'; ctx.lineWidth=2; ctx.strokeRect(6,6,W_MULTI-12,H_MULTI-12);
   for(const f of mFighters){
     if(!f.alive){
       const a = Math.max(0, 1-f.fadeT/40);
@@ -1224,7 +1701,11 @@ function readFfaConfigs(){
     hp: Math.max(50, parseInt(row.querySelector('.f-hp').value,10) || 500),
     dmg: Math.max(1, parseInt(row.querySelector('.f-dmg').value,10) || 10),
     growthKey: row.querySelector('.f-growth').value,
-    speed: 1, isBoss: false,
+    speed: parseFloat(row.querySelector('.f-speed').value) || 1,
+    size: parseFloat(row.querySelector('.f-size').value) || 1,
+    speedHit: (parseFloat(row.querySelector('.f-speedhit').value) || 0) / 100,
+    sizeHit: (parseFloat(row.querySelector('.f-sizehit').value) || 0) / 100,
+    isBoss: false,
   }));
 }
 function readBossConfigs(){
@@ -1234,7 +1715,11 @@ function readBossConfigs(){
     hp: Math.max(500, parseInt(document.getElementById('bossHp').value,10) || 10000),
     dmg: Math.max(1, parseInt(document.getElementById('bossDmg').value,10) || 50),
     growthKey: document.getElementById('bossGrowth').value,
-    speed: 0.7, isBoss: true,
+    speed: parseFloat(document.getElementById('bossSpeed').value) || 0.7,
+    size: parseFloat(document.getElementById('bossSize').value) || 1,
+    speedHit: (parseFloat(document.getElementById('bossSpeedHit').value) || 0) / 100,
+    sizeHit: (parseFloat(document.getElementById('bossSizeHit').value) || 0) / 100,
+    isBoss: true,
   };
   const count = parseInt(document.getElementById('swarmCount').value,10);
   const swarmName = document.getElementById('swarmName').value.trim().toUpperCase() || 'MINION';
@@ -1246,7 +1731,11 @@ function readBossConfigs(){
       hp: Math.max(20, parseInt(document.getElementById('swarmHp').value,10) || 300),
       dmg: Math.max(1, parseInt(document.getElementById('swarmDmg').value,10) || 10),
       growthKey: document.getElementById('swarmGrowth').value,
-      speed: 1.2, isBoss: false,
+      speed: parseFloat(document.getElementById('swarmSpeed').value) || 1.2,
+      size: parseFloat(document.getElementById('swarmSize').value) || 1,
+      speedHit: (parseFloat(document.getElementById('swarmSpeedHit').value) || 0) / 100,
+      sizeHit: (parseFloat(document.getElementById('swarmSizeHit').value) || 0) / 100,
+      isBoss: false,
     });
   }
   return [boss, ...swarm];
@@ -1279,6 +1768,9 @@ function addFfaRow(name, color){
     '<div class="row-fields">'+
       '<div class="field"><label>HP</label><input type="number" class="f-hp" value="800" min="50"></div>'+
       '<div class="field"><label>Damage</label><input type="number" class="f-dmg" value="12" min="1"></div>'+
+      '<div class="field"><label>Speed <span class="val">1.0×</span></label><input type="range" class="f-speed" min="0.4" max="3" step="0.1" value="1"></div>'+
+      '<div class="field"><label>Ball size <span class="val">1.0×</span></label><input type="range" class="f-size" min="0.5" max="3" step="0.1" value="1"></div>'+
+      '<div class="field"><label>Speed / hit <span class="val">Off</span></label><input type="range" class="f-speedhit" data-fmt="pct" min="-25" max="25" step="1" value="0"></div><div class="field"><label>Size / hit <span class="val">Off</span></label><input type="range" class="f-sizehit" data-fmt="pct" min="-25" max="25" step="1" value="0"></div>'+
       '<div class="field field-full"><label>Damage growth</label><select class="f-growth"></select></div>'+
     '</div>';
   document.getElementById('ffaList').appendChild(row);
@@ -1404,14 +1896,15 @@ recordBtn.addEventListener('click', () => {
     mediaRecorder.stop();
     return;
   }
-  if(trialExpired()){
-    recNote.textContent = 'Your free trial has ended. Upgrade to Pro to keep recording.';
-    updateTrialStatus();
+  if(!isAuthed){
+    pendingAction = 'record';
+    openGate('record');
     return;
   }
   if(clipLimitReached()){
-    recNote.textContent = 'You\'ve used all 7 free trial clips. Upgrade to Pro for unlimited clips.';
+    recNote.textContent = 'You\'ve used all ' + TRIAL_CLIP_LIMIT_DISPLAY + ' free clips. Upgrade to Pro for unlimited clips.';
     updateTrialStatus();
+    openUpgrade('limit');
     return;
   }
   ensureAudio();
@@ -1441,7 +1934,8 @@ recordBtn.addEventListener('click', () => {
       if(permission.reason === 'trial_expired'){
         recNote.textContent = 'Your free trial has ended. Upgrade to Pro to keep recording.';
       } else if(permission.reason === 'clip_limit_reached'){
-        recNote.textContent = 'You\'ve used all 7 free trial clips. Upgrade to Pro for unlimited clips.';
+        recNote.textContent = 'You\'ve used all ' + TRIAL_CLIP_LIMIT_DISPLAY + ' free clips. Upgrade to Pro for unlimited clips.';
+        openUpgrade('limit');
       } else if(permission.reason === 'not_authenticated'){
         recNote.textContent = 'Your session expired. Please log in again.';
       } else {
@@ -1450,8 +1944,8 @@ recordBtn.addEventListener('click', () => {
       await fetchTrialStatus();
       return;
     }
-    if(typeof permission.daysLeft === 'number'){
-      trialInfo = { plan: permission.plan, daysLeft: permission.daysLeft, clipsUsed: permission.clipsUsed };
+    if(typeof permission.clipsUsed === 'number'){
+      trialInfo = { plan: permission.plan, clipsUsed: permission.clipsUsed };
       updateTrialStatus();
     }
 
@@ -1462,8 +1956,9 @@ recordBtn.addEventListener('click', () => {
       recordBtn.textContent = '● Record clip';
       recordBtn.disabled = false;
       setCanvasResolution(DISPLAY_RENDER_SCALE);
-      downloadBlob(rawBlob, 'clasharena-battle.mp4');
+      downloadBlob(rawBlob, 'clashballs-battle.mp4');
       recNote.textContent = 'MP4 downloaded, ready to post.';
+      afterDownload();
       return;
     }
 
@@ -1471,10 +1966,11 @@ recordBtn.addEventListener('click', () => {
     recNote.textContent = 'Converting to MP4 in your browser, this can take a moment...';
     try{
       const mp4Blob = await convertWebmToMp4(rawBlob);
-      downloadBlob(mp4Blob, 'clasharena-battle.mp4');
+      downloadBlob(mp4Blob, 'clashballs-battle.mp4');
       recNote.textContent = 'MP4 downloaded, ready to post.';
+      afterDownload();
     }catch(err){
-      downloadBlob(rawBlob, 'clasharena-battle.webm');
+      downloadBlob(rawBlob, 'clashballs-battle.webm');
       recNote.textContent = 'MP4 conversion failed, downloaded as .webm instead. Convert it with any free converter if you need MP4.';
     }finally{
       recordBtn.textContent = '● Record clip';
@@ -1501,7 +1997,7 @@ const trialStatusEl = document.getElementById('trialStatus');
 // Cached copy of the server's trial_status row. Only ever written from
 // fetchTrialStatus() — this file never re-derives days/clips locally,
 // that math (and the actual clip-count increment) lives server-side.
-let trialInfo = { plan: 'free', daysLeft: 3, clipsUsed: 0 };
+let trialInfo = { plan: 'free', clipsUsed: 0 };
 
 async function fetchTrialStatus(){
   const { data, error } = await supabaseClient.from('trial_status').select('*').single();
@@ -1509,13 +2005,12 @@ async function fetchTrialStatus(){
     console.error('Could not load trial status', error);
     return;
   }
-  trialInfo = { plan: data.plan, daysLeft: data.trial_days_left, clipsUsed: data.clips_used };
+  trialInfo = { plan: data.plan, clipsUsed: data.clips_used };
   updateTrialStatus();
 }
 
-function trialExpired(){ return trialInfo.plan === 'free' && trialInfo.daysLeft <= 0; }
 function clipLimitReached(){ return trialInfo.plan === 'free' && trialInfo.clipsUsed >= TRIAL_CLIP_LIMIT_DISPLAY; }
-const TRIAL_CLIP_LIMIT_DISPLAY = 7; // must match TRIAL_CLIP_LIMIT in the record-clip Edge Function
+const TRIAL_CLIP_LIMIT_DISPLAY = 3; // must match TRIAL_CLIP_LIMIT in the record-clip Edge Function
 
 function updateTrialStatus(){
   trialStatusEl.style.display = 'flex';
@@ -1527,28 +2022,162 @@ function updateTrialStatus(){
     trialStatusEl.textContent = 'Pro plan · unlimited clips';
     manageBtn.style.display = 'block';
     upgradeBtn.style.display = 'none';
+    refreshProUI();
     return;
   }
   manageBtn.style.display = 'none';
   upgradeBtn.style.display = 'block';
-  const expired = trialExpired();
   const limitHit = clipLimitReached();
-  trialStatusEl.classList.toggle('limit-reached', expired || limitHit);
-  if(expired){
-    trialStatusEl.textContent = 'Free trial ended';
-  } else if(limitHit){
-    trialStatusEl.textContent = 'Clip limit reached (7/7)';
+  const used = Math.min(trialInfo.clipsUsed || 0, TRIAL_CLIP_LIMIT_DISPLAY);
+  trialStatusEl.classList.toggle('limit-reached', limitHit);
+  if(limitHit){
+    trialStatusEl.textContent = 'Free clips used up (' + used + '/' + TRIAL_CLIP_LIMIT_DISPLAY + ')';
   } else {
-    trialStatusEl.textContent = 'Free trial · Day ' + (3 - trialInfo.daysLeft + 1) + ' of 3 · ' + trialInfo.clipsUsed + '/7 clips used';
+    trialStatusEl.textContent = 'Free trial · ' + used + '/' + TRIAL_CLIP_LIMIT_DISPLAY + ' clips used';
+  }
+  refreshProUI();
+}
+
+/* ---------- Account state: the builder is open to everyone ---------- */
+let isAuthed = false;
+let pendingAction = null;          // 'record' | 'upgrade' — resumed right after sign-up / log-in
+let selectedInterval = 'year';
+
+function isProUser(){ return isAuthed && trialInfo.plan === 'pro'; }
+
+async function unlockBuilder(){
+  isAuthed = true;
+  closeGate();
+  document.getElementById('navLoginBtn').style.display = 'none';
+  document.getElementById('navSignupBtn').style.display = 'none';
+  document.getElementById('navRefBtn').style.display = '';
+  document.getElementById('refCard').style.display = 'flex';
+  resizeCanvas();
+  await fetchTrialStatus();
+  refreshProUI();
+  const action = pendingAction; pendingAction = null;
+  if(action === 'upgrade') startCheckout(selectedInterval);
+  else if(action === 'record') recordBtn.click();
+}
+
+/* ----- auth modal ----- */
+const GATE_COPY = {
+  record:  ['Save your <span class="serif grad-text">clip.</span>', 'Create a free account to record. Your first 3 clips are free, no credit card needed.'],
+  upgrade: ['One step to <span class="serif grad-text">Pro.</span>', 'Create your free account (or log in), then you go straight to checkout.'],
+  login:   ['Welcome <span class="serif grad-text">back.</span>', 'Log in to record clips and keep your Pro features.'],
+  signup:  ['Join <span class="serif grad-text">ClashBalls.</span>', 'Your first 3 clips are free. No credit card needed.'],
+};
+function openGate(kind, pane){
+  const copy = GATE_COPY[kind] || GATE_COPY.signup;
+  document.getElementById('gateTitle').innerHTML = copy[0];
+  document.getElementById('gateSub').textContent = copy[1];
+  const target = pane || (kind === 'login' ? 'gate-login' : 'gate-signup');
+  document.querySelectorAll('#gateOverlay .modal-tab').forEach(t => t.classList.toggle('active', t.dataset.pane === target));
+  document.querySelectorAll('#gateOverlay .form-pane').forEach(p => p.classList.toggle('active', p.id === 'pane-' + target));
+  gateOverlay.classList.add('open');
+  setTimeout(() => { const f = gateOverlay.querySelector('.form-pane.active input'); if(f) f.focus(); }, 60);
+}
+function closeGate(){ gateOverlay.classList.remove('open'); }
+document.getElementById('gateClose').addEventListener('click', () => { pendingAction = null; closeGate(); });
+gateOverlay.addEventListener('click', e => { if(e.target === gateOverlay){ pendingAction = null; closeGate(); } });
+document.getElementById('navLoginBtn').addEventListener('click', () => openGate('login'));
+document.getElementById('navSignupBtn').addEventListener('click', () => openGate('signup'));
+
+/* ----- upgrade modal (monthly 14 € / yearly 99 €) ----- */
+const upgradeModal = document.getElementById('upgradeModal');
+const UPGRADE_COPY = {
+  limit:   ['You\'re out of <span class="serif grad-text">free clips.</span>', 'Go Pro to keep recording: unlimited clips, no watermark.'],
+  colour:  ['Any colour is <span class="serif grad-text">Pro.</span>', 'The six preset backgrounds are free. Pick any colour you like with Pro.'],
+  perhit:  ['Per-hit changes are <span class="serif grad-text">Pro.</span>', 'Make balls grow, shrink, speed up or slow down with every hit.'],
+  watermark: ['Lose the <span class="serif grad-text">watermark.</span>', 'Pro clips export clean, without the ClashBalls watermark.'],
+  menu:    ['Go <span class="serif grad-text">Pro.</span>', 'Unlimited clips, no watermark and every Pro feature.'],
+  landing: ['Go <span class="serif grad-text">Pro.</span>', 'Unlimited clips, no watermark and every Pro feature.'],
+};
+function selectInterval(interval){
+  selectedInterval = interval;
+  upgradeModal.querySelectorAll('.plan-opt').forEach(o => {
+    const on = o.dataset.interval === interval;
+    o.classList.toggle('active', on); o.setAttribute('aria-checked', on);
+  });
+  document.getElementById('upGo').textContent = interval === 'year' ? 'Go Pro yearly · 99 €' : 'Go Pro monthly · 14 €';
+}
+function openUpgrade(reason){
+  if(isProUser()) return;
+  const copy = UPGRADE_COPY[reason] || UPGRADE_COPY.menu;
+  document.getElementById('upTitle').innerHTML = copy[0];
+  document.getElementById('upSub').textContent = copy[1];
+  upgradeModal.classList.add('open');
+}
+function closeUpgrade(){ upgradeModal.classList.remove('open'); }
+upgradeModal.querySelectorAll('.plan-opt').forEach(o => o.addEventListener('click', () => selectInterval(o.dataset.interval)));
+document.getElementById('upClose').addEventListener('click', closeUpgrade);
+document.getElementById('upLater').addEventListener('click', closeUpgrade);
+upgradeModal.addEventListener('click', e => { if(e.target === upgradeModal) closeUpgrade(); });
+document.getElementById('upGo').addEventListener('click', () => {
+  closeUpgrade();
+  if(!isAuthed){ pendingAction = 'upgrade'; openGate('upgrade'); return; }
+  startCheckout(selectedInterval);
+});
+selectInterval('year');
+document.addEventListener('keydown', e => { if(e.key === 'Escape'){ closeUpgrade(); pendingAction = null; closeGate(); } });
+
+/* ----- scarcity meter, watermark row, Pro locks ----- */
+function refreshProUI(){
+  const pro = isProUser();
+  // clip meter next to the record button
+  const meter = document.getElementById('clipMeter');
+  meter.className = 'clip-meter';
+  const dots = n => '<span class="dots">' + Array.from({length: TRIAL_CLIP_LIMIT_DISPLAY}, (_, i) => '<i class="' + (i < n ? 'left' : '') + '"></i>').join('') + '</span>';
+  if(!isAuthed){
+    meter.innerHTML = dots(TRIAL_CLIP_LIMIT_DISPLAY) + '<span><b>3 free clips</b> · no credit card</span>';
+  } else if(pro){
+    meter.innerHTML = '<span><b>Pro</b> · unlimited clips</span>';
+  } else {
+    const left = Math.max(0, TRIAL_CLIP_LIMIT_DISPLAY - (trialInfo.clipsUsed || 0));
+    if(left === 0){
+      meter.classList.add('empty');
+      meter.innerHTML = dots(0) + '<span><b>No free clips left</b> · <a id="meterUpgrade">Go Pro</a></span>';
+      document.getElementById('meterUpgrade').addEventListener('click', () => openUpgrade('limit'));
+    } else {
+      if(left === 1) meter.classList.add('last');
+      meter.innerHTML = dots(left) + '<span><b>' + (left === 1 ? 'Last free clip' : left + ' of ' + TRIAL_CLIP_LIMIT_DISPLAY + ' free clips left') + '</b></span>';
+    }
+  }
+  // watermark row
+  const wm = document.getElementById('wmRow');
+  wm.classList.toggle('pro', pro);
+  wm.innerHTML = pro ? '<span>Watermark</span><b>Off ✓</b>' : '<span>Watermark <b>on</b></span><span>Remove with <span class="pro-badge">PRO</span> 🔒</span>';
+  // locked Pro controls
+  document.querySelectorAll('.per-hit').forEach(el => el.classList.toggle('pro-locked', !pro));
+  document.querySelectorAll('.row-fields input[data-fmt="pct"]').forEach(inp => inp.closest('.field').classList.toggle('pro-locked', !pro));
+  document.getElementById('bgCustomWrap').classList.toggle('pro-locked', !pro);
+  if(pro && savedCustomBg){ setArenaTheme(themeFromColor(savedCustomBg)); savedCustomBg = null; }
+  if(!pro && arenaTheme.key === 'custom') setArenaTheme(ARENA_THEMES[0]);
+}
+document.getElementById('wmRow').addEventListener('click', () => openUpgrade('watermark'));
+// clicks on locked controls open the upgrade dialog instead
+document.addEventListener('click', e => {
+  const locked = e.target.closest('.pro-locked');
+  if(!locked) return;
+  e.preventDefault();
+  openUpgrade(locked.id === 'bgCustomWrap' ? 'colour' : 'perhit');
+}, true);
+
+/* ----- referral: visible card + nav pill, highlighted after each download ----- */
+document.getElementById('refCopyBtn').addEventListener('click', copyReferralLink);
+document.getElementById('navRefBtn').addEventListener('click', copyReferralLink);
+function afterDownload(){
+  const card = document.getElementById('refCard');
+  if(!isAuthed) return;
+  card.style.display = 'flex';
+  card.classList.add('flash');
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  setTimeout(() => card.classList.remove('flash'), 2400);
+  if(!isProUser() && clipLimitReached()){
+    recNote.textContent = 'That was your last free clip. Go Pro for unlimited clips without a watermark.';
   }
 }
 
-async function unlockBuilder(){
-  gateOverlay.style.display = 'none';
-  mainLayout.style.display = 'grid';
-  resizeCanvas();
-  await fetchTrialStatus();
-}
 
 // ---------- Stripe: checkout, billing portal, account menu ----------
 async function authedFetch(path, body){
@@ -1567,12 +2196,13 @@ async function authedFetch(path, body){
   return await resp.json();
 }
 
-async function startCheckout(){
+async function startCheckout(interval){
   const base = window.location.href.split('?')[0];
   try{
     const result = await authedFetch('/functions/v1/create-checkout-session', {
       successUrl: base + '?checkout=success',
       cancelUrl: base + '?checkout=cancelled',
+      interval: interval === 'month' ? 'month' : 'year', // 'year' = 99 €/year, 'month' = 14 €/month
     });
     if(result.url){ window.location.href = result.url; }
     else { alert('Could not start checkout: ' + (result.error || 'unknown error')); }
@@ -1600,9 +2230,10 @@ document.addEventListener('click', (e) => {
     accountDropdown.classList.remove('open');
   }
 });
-document.getElementById('upgradeBtn').addEventListener('click', startCheckout);
+document.getElementById('upgradeBtn').addEventListener('click', () => { accountDropdown.classList.remove('open'); openUpgrade('menu'); });
 document.getElementById('manageSubBtn').addEventListener('click', openBillingPortal);
-document.getElementById('referralBtn').addEventListener('click', async () => {
+document.getElementById('referralBtn').addEventListener('click', copyReferralLink);
+async function copyReferralLink(){
   const { data, error } = await supabaseClient
     .from('subscriptions')
     .select('referral_code')
@@ -1619,7 +2250,7 @@ document.getElementById('referralBtn').addEventListener('click', async () => {
   }catch(e){
     prompt('Copy your referral link:', link);
   }
-});
+}
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   await supabaseClient.auth.signOut();
   window.location.reload();
@@ -1673,11 +2304,11 @@ document.getElementById('gateSignupForm').addEventListener('submit', async (e) =
     return;
   }
   const submitBtn = e.target.querySelector('.modal-submit');
-  submitBtn.disabled = true; submitBtn.textContent = 'Starting trial...';
+  submitBtn.disabled = true; submitBtn.textContent = 'Creating account...';
   const { data, error } = await supabaseClient.auth.signUp({
     email, password: pass, options: { data: { name } }
   });
-  submitBtn.disabled = false; submitBtn.textContent = 'Start Free Trial';
+  submitBtn.disabled = false; submitBtn.textContent = 'Create free account';
   if(error){
     err.textContent = error.message;
     err.style.display = 'block';
@@ -1716,10 +2347,14 @@ document.getElementById('gateLoginForm').addEventListener('submit', async (e) =>
   unlockBuilder();
 });
 
-// If a session already exists (came from index.html, or a reload), skip the gate.
-supabaseClient.auth.getSession().then(({ data }) => {
-  if(data && data.session){ unlockBuilder(); }
+// Existing session (came from index.html or a reload): unlock account features.
+// ?upgrade=year|month (from the landing page pricing) opens the upgrade dialog.
+const upgradeParam = new URLSearchParams(window.location.search).get('upgrade');
+supabaseClient.auth.getSession().then(async ({ data }) => {
+  if(data && data.session){ await unlockBuilder(); }
+  if(upgradeParam){ selectInterval(upgradeParam === 'month' ? 'month' : 'year'); openUpgrade('landing'); }
 });
+refreshProUI();
 
 /* ============ Init ============ */
 resizeCanvas();
