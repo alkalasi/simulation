@@ -831,7 +831,7 @@ const MULTI_ARENA_Y = MULTI_CANVAS_H - H_MULTI - 26;
 const MULTI_HUD_Y0 = 24, MULTI_HUD_Y1 = MULTI_ARENA_Y - 18;
 // The whole layout is drawn slightly smaller than the 9:16 frame, so the
 // background colour shows as a border on every side (drawing only, physics unchanged).
-const FRAME_SCALE = 0.86;
+const FRAME_SCALE = 0.76;
 function applyFrameInset(w, h){
   ctx.translate(w * (1 - FRAME_SCALE) / 2, h * (1 - FRAME_SCALE) / 2);
   ctx.scale(FRAME_SCALE, FRAME_SCALE);
