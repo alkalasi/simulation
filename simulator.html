@@ -75,6 +75,11 @@
   }
   .mode-tab:hover{color:var(--text);}
   .mode-tab.active{background:var(--text);color:var(--bg);}
+  .mode-tab.soon{cursor:default;opacity:.75;display:inline-flex;align-items:center;gap:6px;}
+  .mode-tab.soon:hover{color:var(--muted);}
+  .mode-tab.soon em{font-style:normal;font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;
+    padding:2px 6px;border-radius:999px;background:var(--grad);}
+  @media(max-width:560px){.mode-tab.soon{display:none;}}
   .nav-right{display:flex;align-items:center;gap:10px;}
   .trial-status{
     font-size:12.5px;color:var(--muted);background:rgba(255,255,255,0.03);
@@ -433,6 +438,7 @@
     <button class="mode-tab active" data-mode="duel">Duel</button>
     <button class="mode-tab" data-mode="ffa">Free-for-all</button>
     <button class="mode-tab" data-mode="boss">Boss Fight</button>
+    <span class="mode-tab soon" title="Tournament Mode is coming soon" aria-disabled="true">Tournament <em>Soon</em></span>
   </div>
   <div class="nav-right">
     <button class="nav-ghost" id="navLoginBtn">Log in</button>
@@ -516,8 +522,8 @@
       <button class="plan-opt active" data-interval="year" role="radio" aria-checked="true">
         <span class="plan-save">Save 41%</span>
         <span class="plan-name">Yearly</span>
-        <span class="plan-price">99 €<small>/ year</small></span>
-        <span class="plan-note">≈ 8.25 € a month</span>
+        <span class="plan-price">8.25 €<small>/ month</small></span>
+        <span class="plan-note">99 € per year, billed yearly</span>
       </button>
     </div>
     <ul class="up-list">
@@ -1822,9 +1828,9 @@ document.getElementById('start-overlay').addEventListener('click', () => {
 });
 
 /* ============ Mode switching ============ */
-document.querySelectorAll('#gameModeTabs .mode-tab').forEach(tab => {
+document.querySelectorAll('#gameModeTabs .mode-tab[data-mode]').forEach(tab => {
   tab.addEventListener('click', () => {
-    document.querySelectorAll('#gameModeTabs .mode-tab').forEach(t=>t.classList.toggle('active', t===tab));
+    document.querySelectorAll('#gameModeTabs .mode-tab[data-mode]').forEach(t=>t.classList.toggle('active', t===tab));
     currentMode = tab.dataset.mode;
     document.getElementById('panel-duel').style.display = currentMode==='duel' ? 'block' : 'none';
     document.getElementById('panel-ffa').style.display = currentMode==='ffa' ? 'block' : 'none';

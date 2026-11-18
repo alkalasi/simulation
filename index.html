@@ -240,9 +240,36 @@
   .mode-meta .num{font-family:var(--serif);font-style:italic;color:var(--muted);font-size:20px;}
   .mode-card h3{font-size:28px;margin-bottom:10px;}
   .mode-card p{color:var(--muted);font-size:15px;}
-  .soon-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:22px;font-size:14px;color:var(--muted);}
-  .soon-chip{border:1px dashed var(--line-2);border-radius:999px;padding:6px 14px;color:#cfcddb;}
-  .soon-chip em{font-style:normal;color:var(--muted);font-size:12px;margin-left:6px;}
+  /* coming soon */
+  .soon-block{margin-top:56px;padding:36px;border-radius:24px;position:relative;overflow:hidden;
+    border:1px dashed rgba(142,107,255,0.45);
+    background:radial-gradient(600px 260px at 0% 0%, rgba(255,79,139,0.10), transparent 70%), radial-gradient(600px 260px at 100% 100%, rgba(59,231,255,0.08), transparent 70%), rgba(255,255,255,0.015);}
+  @media(max-width:600px){.soon-block{padding:22px;margin-top:40px;}}
+  .soon-head{display:flex;flex-wrap:wrap;align-items:center;gap:14px 20px;margin-bottom:26px;}
+  .soon-head h3{font-size:clamp(24px,3vw,34px);flex:1 1 320px;}
+  .soon-pill{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+    color:#fff;padding:7px 14px;border-radius:999px;background:var(--grad);background-size:200% 100%;animation:shimmer 4s linear infinite;
+    box-shadow:0 0 24px -6px rgba(255,79,139,0.8);}
+  .soon-pill i{width:7px;height:7px;border-radius:50%;background:#fff;animation:blink 1.4s infinite;}
+  @keyframes shimmer{to{background-position:200% 0;}}
+  .soon-link{font-size:14px;color:var(--muted);text-decoration:underline;text-underline-offset:3px;}
+  .soon-link:hover{color:var(--text);}
+  .soon-grid{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:16px;}
+  @media(max-width:920px){.soon-grid{grid-template-columns:1fr;}}
+  .soon-card{position:relative;padding:24px;border-radius:18px;border:1px solid var(--line);background:rgba(0,0,0,0.25);}
+  .soon-card.featured{border:1px solid transparent;background:linear-gradient(#0f0e17,#0f0e17) padding-box, var(--grad) border-box;
+    box-shadow:0 20px 60px -30px rgba(142,107,255,0.8);}
+  .soon-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+  .soon-ico{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--b);
+    border:1px solid var(--line-2);background:rgba(255,255,255,0.03);}
+  .soon-card.featured .soon-ico{color:#FFC24D;}
+  .soon-ico svg{width:20px;height:20px;}
+  .soon-tag{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border:1px dashed var(--line-2);padding:4px 10px;border-radius:999px;}
+  .soon-card.featured .soon-tag{color:var(--bg);background:#FFC24D;border-color:#FFC24D;}
+  .soon-card h4{margin:0 0 8px;font-size:22px;font-weight:600;letter-spacing:-0.025em;}
+  .soon-card p{color:var(--muted);font-size:14.5px;}
+  .bracket{display:block;width:100%;max-width:260px;height:auto;margin-top:22px;filter:drop-shadow(0 0 8px rgba(255,194,77,0.25));}
+  @media (prefers-reduced-motion: reduce){.soon-pill,.soon-pill i{animation:none;}}
 
   /* ---------- STEPS ---------- */
   .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;counter-reset:step;}
@@ -307,6 +334,8 @@
   .price-amount{font-size:64px;font-weight:600;letter-spacing:-0.05em;margin:18px 0 2px;line-height:1;}
   .price-amount span{font-size:16px;color:var(--muted);font-weight:500;letter-spacing:0;margin-left:4px;}
   .price-desc{color:var(--muted);font-size:14.5px;}
+  .price-sub{font-size:13.5px;color:var(--muted);margin:6px 0 10px;font-weight:500;}
+  .price-card.pro .price-sub{color:#cfcddb;}
   .billing-toggle{display:inline-flex;gap:4px;margin-top:16px;padding:4px;border-radius:999px;background:rgba(255,255,255,0.04);border:1px solid var(--line);}
   .bt-opt{border:none;background:none;color:var(--muted);font-size:13px;font-weight:600;padding:7px 14px;border-radius:999px;cursor:pointer;font-family:inherit;}
   .bt-opt.active{background:var(--text);color:var(--bg);}
@@ -506,11 +535,39 @@
       </div>
     </article>
   </div>
-  <div class="soon-row reveal">
-    <span>Coming soon:</span>
-    <span class="soon-chip">Underdog</span>
-    <span class="soon-chip">Tournament</span>
-    <span class="soon-chip">Damage Roulette</span>
+  <div class="soon-block">
+    <div class="soon-head reveal">
+      <span class="soon-pill"><i></i>Coming soon</span>
+      <h3>More ways to fight are <span class="serif grad-text">on the way.</span></h3>
+      <a href="#contact" class="soon-link">Which one do you want first? Tell us →</a>
+    </div>
+    <div class="soon-grid">
+      <article class="soon-card featured reveal">
+        <div class="soon-top">
+          <span class="soon-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0V4z"/><path d="M17 5h3v2a3 3 0 01-3 3M7 5H4v2a3 3 0 003 3"/></svg></span>
+          <span class="soon-tag">Next up</span>
+        </div>
+        <h4>Tournament Mode</h4>
+        <p>Run a bracket of duels back to back. The winner carries its damaged health bar into the next round, all the way to the final.</p>
+        <svg class="bracket" viewBox="0 0 220 64" aria-hidden="true" fill="none" stroke-linecap="round"><g stroke="rgba(255,255,255,0.25)" stroke-width="2"><path d="M2 6H60M2 22H60M2 42H60M2 58H60"/></g><g stroke="rgba(142,107,255,0.8)" stroke-width="2"><path d="M60 6V22M60 14H120M60 42V58M60 50H120"/></g><g stroke="#FFC24D" stroke-width="2"><path d="M120 14V50M120 32H184"/></g><circle cx="194" cy="32" r="7" fill="#FFC24D"/></svg>
+      </article>
+      <article class="soon-card reveal">
+        <div class="soon-top">
+          <span class="soon-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="15" r="3"/><circle cx="16" cy="11" r="6"/></svg></span>
+          <span class="soon-tag">Soon</span>
+        </div>
+        <h4>Underdog</h4>
+        <p>Give one ball a size and damage disadvantage on purpose. The bigger the gap, the sweeter the comeback.</p>
+      </article>
+      <article class="soon-card reveal">
+        <div class="soon-top">
+          <span class="soon-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg></span>
+          <span class="soon-tag">Soon</span>
+        </div>
+        <h4>Damage Roulette</h4>
+        <p>Hit damage is randomised within a range you set, so even a rematch with the same names never plays out the same way.</p>
+      </article>
+    </div>
   </div>
 </section>
 
@@ -625,8 +682,9 @@
         <button type="button" class="bt-opt" data-interval="month" role="radio" aria-checked="false">Monthly</button>
         <button type="button" class="bt-opt active" data-interval="year" role="radio" aria-checked="true">Yearly <span class="bt-save">−41%</span></button>
       </div>
-      <div class="price-amount" id="proPrice">99 €<span>/ year</span></div>
-      <p class="price-desc" id="proDesc">≈ 8.25 € a month, billed yearly. For creators who post every day.</p>
+      <div class="price-amount" id="proPrice">8.25 €<span>/ month</span></div>
+      <div class="price-sub" id="proSub">99 € per year, billed yearly</div>
+      <p class="price-desc" id="proDesc">For creators who post every day.</p>
       <ul class="price-list">
         <li>Everything in the free trial</li>
         <li>Unlimited clips</li>
@@ -658,7 +716,7 @@
       </details>
       <details class="faq-item">
         <summary>What does Pro cost?<span class="plus"></span></summary>
-        <div class="faq-a">14 € a month, or 99 € a year (about 8.25 € a month). Both include unlimited clips without a watermark, any background colour and per-hit speed and size changes. You can cancel anytime.</div>
+        <div class="faq-a">14 € a month, or 8.25 € a month on the yearly plan (99 € billed once a year). Both include unlimited clips without a watermark, any background colour and per-hit speed and size changes. You can cancel anytime.</div>
       </details>
       <details class="faq-item">
         <summary>What happens after my 3 free clips?<span class="plus"></span></summary>
@@ -798,14 +856,15 @@
 /* ================= Pricing: monthly / yearly ================= */
 (function(){
   const PRICES = {
-    month: { price: '14 €<span>/ month</span>', desc: 'Billed monthly, cancel anytime. For creators who post every day.', cta: 'Go Pro monthly' },
-    year:  { price: '99 €<span>/ year</span>',  desc: '≈ 8.25 € a month, billed yearly. For creators who post every day.', cta: 'Go Pro yearly' },
+    month: { price: '14 €<span>/ month</span>',   sub: 'Billed monthly, cancel anytime', desc: 'For creators who post every day.', cta: 'Go Pro monthly' },
+    year:  { price: '8.25 €<span>/ month</span>', sub: '99 € per year, billed yearly',    desc: 'For creators who post every day.', cta: 'Go Pro yearly' },
   };
   const opts = document.querySelectorAll('.bt-opt');
   opts.forEach(o => o.addEventListener('click', () => {
     const k = o.dataset.interval, p = PRICES[k];
     opts.forEach(x => { const on = x === o; x.classList.toggle('active', on); x.setAttribute('aria-checked', on); });
     document.getElementById('proPrice').innerHTML = p.price;
+    document.getElementById('proSub').textContent = p.sub;
     document.getElementById('proDesc').textContent = p.desc;
     const cta = document.getElementById('proCta');
     cta.href = 'simulator.html?upgrade=' + k;
