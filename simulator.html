@@ -829,6 +829,13 @@ const DUEL_OFFSET_Y = (DUEL_CANVAS_H - H) / 2;
 const MULTI_CANVAS_H = W_MULTI * 16 / 9;          // health bars on top, arena below
 const MULTI_ARENA_Y = MULTI_CANVAS_H - H_MULTI - 26;
 const MULTI_HUD_Y0 = 24, MULTI_HUD_Y1 = MULTI_ARENA_Y - 18;
+// The whole layout is drawn slightly smaller than the 9:16 frame, so the
+// background colour shows as a border on every side (drawing only, physics unchanged).
+const FRAME_SCALE = 0.86;
+function applyFrameInset(w, h){
+  ctx.translate(w * (1 - FRAME_SCALE) / 2, h * (1 - FRAME_SCALE) / 2);
+  ctx.scale(FRAME_SCALE, FRAME_SCALE);
+}
 const EXPORT_RENDER_SCALE = 1080 / W; // used only while actually recording a clip
 const DISPLAY_RENDER_SCALE = Math.min(2, window.devicePixelRatio || 1); // crisp but cheap during normal play
 let activeRenderScale = DISPLAY_RENDER_SCALE;
@@ -1343,6 +1350,7 @@ function drawPopups(f){
 function drawDuel(){
   ctx.setTransform(activeRenderScale, 0, 0, activeRenderScale, 0, 0);
   ctx.fillStyle = arenaTheme.outer; ctx.fillRect(0,0,W,DUEL_CANVAS_H);
+  applyFrameInset(W, DUEL_CANVAS_H);
   ctx.translate(0, DUEL_OFFSET_Y);
 
   drawLabel(TOP_LABEL_Y0, TOP_LABEL_Y1, top_);
@@ -1354,9 +1362,11 @@ function drawDuel(){
   drawBars(top_);
   drawChecker(TOP_CHECKER_Y0, TOP_CHECKER_Y1);
 
-  ctx.fillStyle = arenaTheme.ink; ctx.font = '900 18px Arial';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText('VS', W/2, (VS_Y0+VS_Y1)/2);
+  if(!(gameOver && winner)){ // keep VS from showing through the winner banner
+    ctx.fillStyle = arenaTheme.ink; ctx.font = '900 18px Arial';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('VS', W/2, (VS_Y0+VS_Y1)/2);
+  }
 
   drawLabel(BOT_LABEL_Y0, BOT_LABEL_Y1, bot_);
   const botFloor = currentFloor(bot_);
@@ -1644,6 +1654,7 @@ function drawMultiHud(){
 function drawMulti(){
   ctx.setTransform(activeRenderScale,0,0,activeRenderScale,0,0);
   ctx.fillStyle=arenaTheme.outer; ctx.fillRect(0,0,W_MULTI,MULTI_CANVAS_H);
+  applyFrameInset(W_MULTI, MULTI_CANVAS_H);
   drawMultiHud();
   ctx.translate(0, MULTI_ARENA_Y);
   // background colour frames the arena; balls bounce exactly at its inner edge (r + 6)

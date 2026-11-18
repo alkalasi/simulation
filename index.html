@@ -183,7 +183,7 @@
     box-shadow:0 0 0 1px rgba(255,255,255,0.10), 0 40px 90px -30px rgba(0,0,0,0.9), 0 0 80px -20px rgba(142,107,255,0.45);
   }
   .phone-screen{position:relative;width:100%;height:100%;border-radius:35px;overflow:hidden;background:#e9ddc4;
-    display:flex;align-items:center;justify-content:center;padding:56px 30px 34px;}
+    display:flex;align-items:center;justify-content:center;padding:34px 0 6px;}
   .phone-notch{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:84px;height:22px;border-radius:999px;background:#000;z-index:2;}
   .float-chip{
     position:absolute;z-index:2;display:flex;align-items:center;gap:8px;
@@ -867,6 +867,9 @@
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(name.charAt(0), x, y + 1);
   }
+  // same frame inset as the builder export: background colour shows on every side
+  const FRAME_SCALE = 0.86;
+  function inset(ctx, w, h){ ctx.translate(w * (1 - FRAME_SCALE) / 2, h * (1 - FRAME_SCALE) / 2); ctx.scale(FRAME_SCALE, FRAME_SCALE); }
   function banner(ctx, w, h, text, color){
     ctx.fillStyle = 'rgba(8,9,12,0.55)'; ctx.fillRect(0, h / 2 - 24, w, 48);
     ctx.fillStyle = color; ctx.font = '900 20px Arial';
@@ -956,7 +959,7 @@
     }
     function draw(T){
       ctx.fillStyle = T.outer; ctx.fillRect(0, 0, W, CH);
-      ctx.save(); ctx.translate(0, OFF);
+      ctx.save(); inset(ctx, W, CH); ctx.translate(0, OFF);
       drawFighter(fs[0], T);
       if(!winner){ // hide VS behind the winner banner so the text stays readable
         ctx.fillStyle = T.ink; ctx.font = '900 18px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -1075,6 +1078,7 @@
     }
     function draw(T){
       ctx.fillStyle = T.outer; ctx.fillRect(0, 0, W, CH);
+      ctx.save(); inset(ctx, W, CH);
       hud(T);
       ctx.save(); ctx.translate(0, ARENA_Y);
       // same as the builder: background colour frames the arena
@@ -1093,6 +1097,7 @@
         ctx.globalAlpha = 1;
       });
       if(winner) banner(ctx, W, AH, winner.name + ' WINS', winner.color);
+      ctx.restore();
       ctx.restore();
       ctx.restore();
     }
