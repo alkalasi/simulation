@@ -142,7 +142,7 @@
 
   /* ---------- HERO ---------- */
   .hero{
-    display:grid;grid-template-columns:1.15fr 0.85fr;gap:56px;align-items:center;
+    display:grid;grid-template-columns:0.95fr 1.05fr;gap:56px;align-items:center;
     padding-top:84px;padding-bottom:72px;
   }
   @media(max-width:920px){.hero{grid-template-columns:1fr;padding-top:48px;padding-bottom:48px;gap:48px;}}
@@ -161,7 +161,19 @@
   }
   .pill .live::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--bg);animation:blink 1.4s infinite;}
   @keyframes blink{50%{opacity:.25;}}
-  .hero h1{font-size:clamp(46px,7.2vw,96px);}
+  .hero h1{font-size:clamp(46px,6vw,84px);}
+  /* hero explainer video */
+  .hero-video{position:relative;width:100%;aspect-ratio:16/9;border-radius:22px;overflow:hidden;background:#0d0d14;
+    border:1px solid transparent;background:linear-gradient(#0d0d14,#0d0d14) padding-box, var(--grad) border-box;
+    box-shadow:0 40px 100px -40px rgba(0,0,0,0.9), 0 0 120px -30px rgba(142,107,255,0.55);}
+  .hero-video video{display:block;width:100%;height:100%;object-fit:cover;}
+  .hv-sound{position:absolute;left:16px;bottom:16px;display:inline-flex;align-items:center;gap:12px;padding:8px 18px 8px 8px;border-radius:999px;
+    border:1px solid rgba(255,255,255,0.22);background:rgba(7,7,11,0.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s, transform .2s;}
+  .hv-sound:hover{background:rgba(7,7,11,0.9);transform:translateY(-1px);}
+  .hv-ico{width:34px;height:34px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;}
+  .hv-ico svg{width:16px;height:16px;margin-left:2px;}
+  .hero-video.playing .hv-sound{opacity:0;pointer-events:none;}
   .hero h1 .serif{font-size:1.08em;line-height:.9;padding-right:.06em;}
   .hero .sub{color:var(--muted);font-size:clamp(16px,1.6vw,19px);max-width:44ch;margin-top:26px;}
   .hero-ctas{display:flex;gap:12px;margin-top:36px;flex-wrap:wrap;}
@@ -487,15 +499,10 @@
     <div class="hero-note"><span>No sign-up to try</span><span>3 free clips</span><span>No credit card</span></div>
   </div>
 
-  <div class="stage" aria-hidden="true">
-    <div class="phone">
-      <div class="phone-screen">
-        <div class="phone-notch"></div>
-        <canvas class="mode-canvas hero-canvas" data-mode="duel" data-theme="1"></canvas>
-      </div>
-    </div>
-    <div class="float-chip chip-1"><span class="dotc" style="background:#ff3b5c;box-shadow:0 0 10px #ff3b5c"></span><div><b id="chipDmg">-10 DMG</b><small>Doubling per hit</small></div></div>
-    <div class="float-chip chip-2"><span class="dotc" id="chipSwatch" style="width:14px;height:14px;background:#c9ecd9;box-shadow:0 0 0 2px rgba(255,255,255,0.25)"></span><div><b id="chipTheme">Mint</b><small>Background colour</small></div></div>
+  <div class="hero-video">
+    <video id="heroVideo" src="assets/video/clashballs-explainer.mp4" poster="assets/video/clashballs-explainer-poster.jpg"
+      autoplay muted loop playsinline preload="auto" aria-label="ClashBalls explainer video"></video>
+    <button class="hv-sound" id="hvSound" type="button"><span class="hv-ico"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></span>Watch with sound</button>
   </div>
 </header>
 
@@ -851,6 +858,19 @@
   const pairs = [['CATS','DOGS'],['PIZZA','SUSHI'],['MONDAY','FRIDAY'],['COFFEE','TEA'],['SUMMER','WINTER'],['NIGHT OWL','EARLY BIRD'],['BLAZE','FROST'],['TEAM RED','TEAM BLUE']];
   const html = pairs.map(([a,b]) => '<div class="ticker-item">'+a+' <span class="vs">vs</span> '+b+'<span class="sep"></span></div>').join('');
   document.getElementById('tickerTrack').innerHTML = html + html;
+})();
+
+/* ================= Hero video ================= */
+(function(){
+  const v = document.getElementById('heroVideo'), btn = document.getElementById('hvSound');
+  if(!v) return;
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){ v.removeAttribute('autoplay'); v.pause(); }
+  btn.addEventListener('click', () => {
+    v.muted = false; v.loop = false; v.currentTime = 0; v.controls = true;
+    v.play().catch(() => {});
+    v.parentElement.classList.add('playing');
+  });
+  v.addEventListener('ended', () => { v.muted = true; v.loop = true; v.controls = false; v.parentElement.classList.remove('playing'); v.play().catch(() => {}); });
 })();
 
 /* ================= Pricing: monthly / yearly ================= */
